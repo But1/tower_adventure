@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>無盡試煉之塔 v3.6 - 瞬發藥水版</title>
+    <title>無盡試煉之塔 v3.7 - 平衡調整版</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -55,7 +55,7 @@
         .success { color: var(--success-color); }
         .desc-text { color: #aaa; font-size: 0.85rem; }
 
-        /* --- UI: 職業選擇 --- */
+        /* UI Components */
         .class-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
         .class-card { background: #252525; border: 1px solid #444; border-radius: 8px; padding: 10px; cursor: pointer; transition: all 0.2s; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
         .class-card:hover { background: var(--card-hover); border-color: var(--accent-color); transform: translateY(-3px); }
@@ -64,7 +64,6 @@
         .class-role { color: var(--accent-color); font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
         .class-stats { font-size: 0.75rem; color: #bbb; text-align: left; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; margin-top: auto;}
         
-        /* --- UI: 頂部狀態列 --- */
         .top-panel { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; background: #252525; padding: 8px; border-radius: 5px; font-size: 0.85rem; text-align: center; align-items: center;}
         
         #buff-bar { display: flex; gap: 5px; justify-content: center; font-size: 0.75rem; height: 20px; margin-bottom: 5px;}
@@ -72,16 +71,15 @@
         .buff-tag.active { display: inline-block; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        /* --- UI: 中間主要內容區 --- */
         .main-content { display: flex; gap: 10px; height: 360px; }
         .game-log { flex: 2; background: #000; padding: 10px; border: 1px solid #444; border-radius: 5px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.9rem; line-height: 1.5; height: 100%; }
         .log-entry { margin-bottom: 4px; border-bottom: 1px solid #1a1a1a; padding-bottom: 2px;}
+
         .equipment-grid { flex: 1; display: grid; grid-template-columns: 1fr; gap: 5px; background: #2a2a2a; padding: 5px; border-radius: 5px; font-size: 0.8rem; overflow-y: auto; height: 100%; }
         .equip-slot { background: #333; padding: 6px; border-radius: 4px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
         .equip-slot span.label { color: #888; font-size: 0.7rem; }
         .equip-slot span.item-name { color: var(--accent-color); font-weight: bold; font-size: 0.8rem; }
 
-        /* --- UI: 敵人面板 --- */
         #enemy-panel { display: none; background: linear-gradient(to bottom, #3a1111, #220a0a); padding: 10px; border-radius: 8px; border: 2px solid var(--danger-color); text-align: center; margin-bottom: 10px; animation: shake 0.5s; }
         #enemy-panel.active { display: block; }
         .enemy-icon-display { font-size: 3.5rem; display: block; margin-bottom: 5px; filter: drop-shadow(0 0 10px var(--danger-color)); }
@@ -90,7 +88,6 @@
         .enemy-hp-fill { height: 100%; background: var(--danger-color); width: 100%; transition: width 0.3s ease-out; }
         @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
 
-        /* --- UI: 按鈕區 --- */
         .controls { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 40px; margin-top: auto; }
         button { background-color: #3a3a3a; color: white; border: 1px solid #555; padding: 12px 10px; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: 0.2s; flex: 1; min-width: 100px; touch-action: manipulation; }
         button:hover { background-color: #505050; border-color: #999; }
@@ -128,7 +125,6 @@
         .screen { display: none; }
         .active { display: block; }
 
-        /* --- 手機版專屬優化 --- */
         @media (max-width: 768px) {
             .game-container { padding: 10px; max-height: 100vh; border: none; border-radius: 0; }
             .top-panel { font-size: 0.75rem; grid-template-columns: repeat(5, 1fr); }
@@ -144,7 +140,7 @@
 <div class="game-container">
     <div id="notification-area"></div>
 
-    <h1>🏰 無盡試煉 v3.6</h1>
+    <h1>🏰 無盡試煉 v3.7</h1>
 
     <div id="screen-start" class="screen active">
         <h3>請選擇你的英雄</h3>
@@ -206,13 +202,33 @@
     const CLASSES = { barbarian: { name: "野蠻人", hp: 130, atk: 12, def: 2 }, assassin: { name: "刺客", hp: 80, atk: 15, def: 1 }, mage: { name: "法師", hp: 60, atk: 22, def: 0 }, warlock: { name: "術士", hp: 90, atk: 12, def: 1 }, knight: { name: "騎士", hp: 110, atk: 9, def: 6 } };
     const SLOTS = ['mainHand', 'offHand', 'chest', 'helm', 'boots', 'ring', 'necklace'];
     const SLOT_NAMES = { mainHand: "主手", offHand: "副手", chest: "胸甲", helm: "頭盔", boots: "鞋子", ring: "戒指", necklace: "項鍊" };
-    const ACHIEVEMENTS = [{ id: 'first_step', title: '初出茅廬', desc: '開始第一次遊戲' }, { id: 'floor_10', title: '探險家', desc: '到達第 10 層' }, { id: 'floor_30', title: '深淵行者', desc: '到達第 30 層' }, { id: 'floor_50', title: '傳奇英雄', desc: '到達第 50 層' }, { id: 'high_dmg', title: '一擊必殺', desc: '單次攻擊造成超過 80 點傷害' }, { id: 'iron_wall', title: '銅牆鐵壁', desc: '防禦力超過 25' }, { id: 'full_gear', title: '全副武裝', desc: '所有裝備欄位都穿上裝備' }, { id: 'rich', title: '財富自由', desc: '持有金幣超過 500' }, { id: 'hoarder', title: '藥罐子', desc: '同時持有 10 瓶藥水' }, { id: 'lucky', title: '幸運一擊', desc: '觸發一次爆擊' }, { id: 'untouchable', title: '毫髮無傷', desc: '受到攻擊但傷害為 0' }, { id: 'death', title: '勇者長眠', desc: '第一次死亡' }];
+    // 更新成就列表 (18個)
+    const ACHIEVEMENTS = [
+        { id: 'first_step', title: '初出茅廬', desc: '開始第一次遊戲' }, 
+        { id: 'floor_10', title: '探險家', desc: '到達第 10 層' }, 
+        { id: 'floor_20', title: '中途點', desc: '到達第 20 層' }, 
+        { id: 'floor_30', title: '深淵行者', desc: '到達第 30 層' }, 
+        { id: 'floor_50', title: '傳奇英雄', desc: '到達第 50 層' },
+        { id: 'boss_killer', title: '弒君者', desc: '擊敗第 10 層的首領' },
+        { id: 'high_dmg', title: '一擊必殺', desc: '單次攻擊造成超過 80 點傷害' }, 
+        { id: 'glass_cannon', title: '破壞神', desc: '攻擊力超過 50' },
+        { id: 'iron_wall', title: '銅牆鐵壁', desc: '防禦力超過 25' }, 
+        { id: 'full_gear', title: '全副武裝', desc: '所有裝備欄位都穿上裝備' }, 
+        { id: 'rich', title: '財富自由', desc: '持有金幣超過 500' }, 
+        { id: 'shopaholic', title: '購物狂', desc: '在商人處花費超過 500 金幣' },
+        { id: 'hoarder', title: '藥罐子', desc: '同時持有 10 瓶藥水' }, 
+        { id: 'lucky', title: '幸運一擊', desc: '觸發一次爆擊' }, 
+        { id: 'lucky_looter', title: '精良收藏', desc: '裝備一件「精良」裝備' },
+        { id: 'untouchable', title: '毫髮無傷', desc: '受到攻擊但傷害為 0' }, 
+        { id: 'close_call', title: '九死一生', desc: '戰鬥勝利時 HP 低於 10' },
+        { id: 'death', title: '勇者長眠', desc: '第一次死亡' }
+    ];
     const ITEM_DB = { mainHand: [{ name: "生鏽鐵劍", stats: { atk: 3 }, allowed: null }, { name: "戰斧", stats: { atk: 6, spd: -1 }, allowed: ['barbarian', 'knight'] }, { name: "毒牙匕首", stats: { atk: 3, crit: 5 }, allowed: ['assassin', 'warlock'] }, { name: "老舊法杖", stats: { atk: 7 }, allowed: ['mage', 'warlock'] }, { name: "騎士長劍", stats: { atk: 5, def: 1 }, allowed: ['knight'] }, { name: "雷神之錘", stats: { atk: 9 }, allowed: ['barbarian'] }, { name: "儀式骨刀", stats: { atk: 4, hp: 10 }, allowed: ['warlock'] }, { name: "禁忌魔典", stats: { atk: 8 }, allowed: ['mage'] }, { name: "暗影之刃", stats: { atk: 6, crit: 4 }, allowed: ['assassin'] }, { name: "勇者之劍", stats: { atk: 10 }, allowed: null }], offHand: [{ name: "木盾", stats: { def: 2 }, allowed: ['knight', 'barbarian'] }, { name: "鐵圓盾", stats: { def: 4 }, allowed: ['knight'] }, { name: "水晶球", stats: { atk: 2 }, allowed: ['mage', 'warlock'] }, { name: "招架匕首", stats: { def: 1, crit: 2 }, allowed: ['assassin'] }, { name: "礦工提燈", stats: { def: 1, hp: 5 }, allowed: null }], chest: [{ name: "皮甲", stats: { def: 2 }, allowed: null }, { name: "鎖子甲", stats: { def: 5 }, allowed: ['knight', 'barbarian'] }, { name: "法師長袍", stats: { def: 1, atk: 3 }, allowed: ['mage', 'warlock'] }, { name: "重型板甲", stats: { def: 9, spd: -2 }, allowed: ['knight'] }, { name: "刺客披風", stats: { def: 2, crit: 2 }, allowed: ['assassin'] }], helm: [{ name: "頭帶", stats: { atk: 1 }, allowed: null }, { name: "十字軍頭盔", stats: { def: 4 }, allowed: ['knight'] }, { name: "獸角盔", stats: { def: 2, hp: 10 }, allowed: ['barbarian'] }, { name: "神秘兜帽", stats: { def: 1, atk: 1 }, allowed: ['mage', 'warlock'] }], boots: [{ name: "舊皮靴", stats: { def: 1 }, allowed: null }, { name: "鋼鐵戰靴", stats: { def: 3 }, allowed: ['knight'] }, { name: "輕靈之靴", stats: { atk: 1 }, allowed: ['mage', 'assassin'] }], ring: [{ name: "鐵戒指", stats: { def: 1 }, allowed: null }, { name: "紅寶石戒", stats: { atk: 2 }, allowed: null }, { name: "生命之戒", stats: { hp: 15 }, allowed: null }, { name: "幸運指環", stats: { crit: 2 }, allowed: null }], necklace: [{ name: "守護護符", stats: { def: 2 }, allowed: null }, { name: "狼牙項鍊", stats: { atk: 1, crit: 1 }, allowed: null }, { name: "藍寶石墜", stats: { atk: 3 }, allowed: null }] };
     const MONSTER_DB = { weak: [{ icon: '💧', name: '史萊姆' }, { icon: '🐀', name: '巨大溝鼠' }, { icon: '🦇', name: '吸血蝙蝠' }, { icon: '🕷️', name: '劇毒蜘蛛' }, { icon: '🥬', name: '走路草' }], medium: [{ icon: '👺', name: '哥布林' }, { icon: '💀', name: '骷髏士兵' }, { icon: '🐺', name: '狂暴野狼' }, { icon: '🧟', name: '食屍鬼' }, { icon: '🐍', name: '大蛇' }], strong: [{ icon: '👹', name: '半獸人戰士' }, { icon: '👻', name: '詛咒幽靈' }, { icon: '🗿', name: '石像鬼' }, { icon: '🦂', name: '巨型蠍子' }, { icon: '🧛', name: '吸血鬼僕從' }], boss: [{ icon: '🐉', name: '幼龍' }, { icon: '🧙‍♂️', name: '巫妖' }, { icon: '🦍', name: '金剛' }, { icon: '🦕', name: '暴龍' }, { icon: '🦑', name: '克蘇魯之眼' }, { icon: '👿', name: '深淵惡魔' }] };
     const POTIONS = { heal_small: { name: "小型藥水", icon: "🍷", desc: "回復 50 點生命", type: "heal", val: 50, price: 50 }, heal_large: { name: "全能藥劑", icon: "🏺", desc: "回復 100% 生命", type: "healFull", val: 0, price: 150 }, buff_atk: { name: "怪力藥丸", icon: "💪", desc: "本層攻擊 +5", type: "buff", stat: "atk", val: 5, price: 100 }, buff_def: { name: "硬化藥劑", icon: "🐢", desc: "本層防禦 +3", type: "buff", stat: "def", val: 3, price: 80 } };
 
     /* --- 遊戲狀態 --- */
-    let player = { base: {}, currentHp: 0, gold: 0, equipment: {}, classKey: '', inventory: {}, tempBuffs: { atk: 0, def: 0 } };
+    let player = { base: {}, currentHp: 0, gold: 0, equipment: {}, classKey: '', inventory: {}, tempBuffs: { atk: 0, def: 0 }, spentGold: 0 };
     let floor = 0;
     let tempLoot = null;
     let enemy = null;
@@ -247,11 +263,15 @@
 
         const grid = document.getElementById('equip-display'); grid.innerHTML = ''; SLOTS.forEach(slot => { const item = player.equipment[slot]; const div = document.createElement('div'); div.className = 'equip-slot'; div.innerHTML = `<span class="label">${SLOT_NAMES[slot]}</span><span class="item-name">${item ? item.name : '---'}</span>`; if (item) { let txt = ''; for (let k in item.stats) txt += `${k.toUpperCase()}+${item.stats[k]} `; div.title = txt; } grid.appendChild(div); });
         
+        // 成就檢查
         let totalPotions = Object.values(player.inventory).reduce((a,b)=>a+b, 0);
         if (totalPotions >= 10) checkAchievement('hoarder');
-        if (stats.def + player.tempBuffs.def >= 25) checkAchievement('iron_wall'); 
+        if (stats.def + player.tempBuffs.def >= 25) checkAchievement('iron_wall');
+        if (stats.atk + player.tempBuffs.atk >= 50) checkAchievement('glass_cannon'); // New
         if (player.gold >= 500) checkAchievement('rich'); 
         if (SLOTS.every(s => player.equipment[s] !== null)) checkAchievement('full_gear');
+        if (player.spentGold >= 500) checkAchievement('shopaholic'); // New
+        
         updateEnemyUI();
     }
 
@@ -276,7 +296,7 @@
         player = {
             classKey: classKey, base: { ...cls }, currentHp: cls.hp, gold: 0, equipment: {},
             inventory: { 'heal_small': 2, 'heal_large': 0, 'buff_atk': 0, 'buff_def': 0 },
-            tempBuffs: { atk: 0, def: 0 }
+            tempBuffs: { atk: 0, def: 0 }, spentGold: 0
         };
         SLOTS.forEach(slot => player.equipment[slot] = null);
         floor = 0; enemy = null;
@@ -291,7 +311,10 @@
     function nextFloor() {
         floor++; enemy = null;
         if (player.tempBuffs.atk > 0 || player.tempBuffs.def > 0) { player.tempBuffs = { atk: 0, def: 0 }; log("藥水效果消退了...", 'desc-text'); }
-        if (floor >= 10) checkAchievement('floor_10'); if (floor >= 30) checkAchievement('floor_30'); if (floor >= 50) checkAchievement('floor_50');
+        if (floor >= 10) checkAchievement('floor_10'); 
+        if (floor >= 20) checkAchievement('floor_20'); // New
+        if (floor >= 30) checkAchievement('floor_30'); 
+        if (floor >= 50) checkAchievement('floor_50');
         updateUI(); log(`<br>--- <strong>第 ${floor} 層</strong> ---`, 'highlight');
         const rand = Math.random(); if (floor % 10 === 0) encounterMonster(true); else if (rand < 0.7) encounterMonster(false); else triggerEvent();
     }
@@ -305,10 +328,16 @@
             if (floor > 30) category = 'strong'; else if (floor > 10) category = 'medium';
             if (isBoss) category = 'boss';
             const monsterTemplate = MONSTER_DB[category][Math.floor(Math.random() * MONSTER_DB[category].length)];
+            
+            // v3.7 Nerf Boss Stats
+            let hpBase = isBoss ? 130 : 35; // Was 200
+            let atkBase = isBoss ? 13 : 6;  // Was 18
+
             enemy = {
                 icon: monsterTemplate.icon, name: (isBoss ? "首領: " : "") + monsterTemplate.name,
-                maxHp: Math.floor((isBoss ? 200 : 35) * scale), currentHp: Math.floor((isBoss ? 200 : 35) * scale),
-                atk: Math.floor((isBoss ? 18 : 6) * scale) + Math.floor(floor/2),
+                maxHp: Math.floor(hpBase * scale), currentHp: Math.floor(hpBase * scale),
+                atk: Math.floor(atkBase * scale) + Math.floor(floor/2),
+                isBoss: isBoss // Mark as boss
             };
         }
         updateUI(); 
@@ -336,6 +365,11 @@
         if (enemy.currentHp <= 0) {
             log(`成功擊敗了 ${enemy.icon} ${enemy.name}！`, 'success');
             player.gold += Math.floor(Math.random() * 15) + floor;
+            
+            // Check Achievements
+            if (player.currentHp < 10) checkAchievement('close_call');
+            if (enemy.isBoss && floor === 10) checkAchievement('boss_killer');
+
             enemy = null; updateUI(); winReward();
             return;
         }
@@ -410,10 +444,16 @@
         const obj = merchantItems[idx];
         if (obj.sold) { showToast("這商品已經賣出了"); return; }
         if (player.gold >= obj.price) {
-            player.gold -= obj.price; obj.sold = true; document.getElementById('merchant-gold').innerText = player.gold;
+            player.gold -= obj.price; 
+            player.spentGold = (player.spentGold || 0) + obj.price; // Track spending
+            obj.sold = true; 
+            document.getElementById('merchant-gold').innerText = player.gold;
+            
             if (obj.type === 'potion') { player.inventory[obj.key]++; showToast(`購買了 ${obj.name}`); } 
             else { tempLoot = obj.item; showLootModal(obj.item); document.getElementById('modal-merchant').style.display = 'none'; return; }
+            
             openMerchantModal();
+            updateUI(); // Check achievements
         } else { showToast("金幣不足！"); }
     }
     
@@ -478,7 +518,12 @@
     function generateLoot() { const item = generateRandomEquip(); if(!item) {renderNextButton(); return;} tempLoot = item; showLootModal(item); }
     function showLootModal(newItem) { const modal = document.getElementById('modal-loot'); const currentItem = player.equipment[newItem.slot]; let curHtml = currentItem ? `<strong>${currentItem.name}</strong><br>` : "無<br>"; if (currentItem) for (let k in currentItem.stats) curHtml += `${k.toUpperCase()}: ${currentItem.stats[k]}<br>`; document.getElementById('loot-current').innerHTML = curHtml; let newHtml = `<strong>${newItem.name}</strong><br>`; for (let k in newItem.stats) { let diff = newItem.stats[k] - (currentItem && currentItem.stats[k] ? currentItem.stats[k] : 0); let colorClass = diff > 0 ? 'stat-diff-pos' : (diff < 0 ? 'stat-diff-neg' : ''); newHtml += `${k.toUpperCase()}: ${newItem.stats[k]} <span class="${colorClass}">(${diff>0?'+':''}${diff})</span><br>`; } document.getElementById('loot-new').innerHTML = newHtml; modal.style.display = 'flex'; }
     function confirmLoot(accept) { document.getElementById('modal-loot').style.display = 'none'; if (accept && tempLoot) equip(tempLoot, tempLoot.slot); tempLoot = null; renderNextButton(); }
-    function equip(item, slot, silent=false) { player.equipment[slot] = item; updateUI(); if (!silent) log(`裝備了 <span class="highlight">${item.name}</span>！`, 'success'); }
+    function equip(item, slot, silent=false) { 
+        player.equipment[slot] = item; 
+        if (item.name.includes("精良")) checkAchievement('lucky_looter');
+        updateUI(); 
+        if (!silent) log(`裝備了 <span class="highlight">${item.name}</span>！`, 'success'); 
+    }
     function renderNextButton() { const area = document.getElementById('action-area'); area.innerHTML = ''; const btn = document.createElement('button'); btn.innerText = '👣 前往下一層'; btn.onclick = nextFloor; area.appendChild(btn); }
     function gameOver() { checkAchievement('death'); document.getElementById('screen-game').classList.remove('active'); document.getElementById('screen-over').classList.add('active'); document.getElementById('final-floor').innerText = floor; }
 
@@ -495,7 +540,6 @@
         document.getElementById('modal-potions').style.display = 'flex';
     }
     
-    // v3.6 修改：喝藥水不消耗回合，並立即刷新列表
     function usePotion(key) {
         if (player.inventory[key] > 0) {
             player.inventory[key]--; const pData = POTIONS[key];
@@ -504,7 +548,7 @@
             else if (pData.type === 'buff') { player.tempBuffs[pData.stat] += pData.val; log(`喝下了 ${pData.icon}${pData.name}，能力獲得了提升！`, 'highlight'); }
             
             updateUI();
-            openPotionModal(); // 刷新清單顯示，不關閉視窗
+            openPotionModal();
         }
     }
 </script>

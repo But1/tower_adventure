@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無盡試煉之塔 v3.0</title>
+    <title>無盡試煉之塔 v3.1 - 職業詳解版</title>
     <style>
         :root {
             --bg-color: #121212;
             --text-color: #e0e0e0;
             --accent-color: #ffd700;
             --rare-color: #a335ee;
-            --danger-color: #ff4444;
-            --success-color: #44ff44;
+            --danger-color: #ff5555;
+            --success-color: #55ff55;
             --panel-bg: #1e1e1e;
             --border-color: #333;
+            --card-hover: #2c2c2c;
         }
 
         body {
@@ -30,23 +31,60 @@
 
         .game-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px; /* 加寬以容納職業卡片 */
             background-color: var(--panel-bg);
-            padding: 15px;
+            padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            box-shadow: 0 0 25px rgba(0,0,0,0.9);
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 15px;
             position: relative;
+            max-height: 95vh;
+            overflow-y: auto; /* 防止小螢幕爆版 */
         }
 
         h1, h2, h3 { text-align: center; margin: 5px 0; color: var(--accent-color); }
+        p { margin: 5px 0; line-height: 1.4; }
         .highlight { color: var(--accent-color); font-weight: bold; }
         .danger { color: var(--danger-color); }
         .success { color: var(--success-color); }
+        .desc-text { color: #aaa; font-size: 0.85rem; }
 
+        /* --- 職業選擇卡片樣式 (新) --- */
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .class-card {
+            background: #252525;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .class-card:hover {
+            background: var(--card-hover);
+            border-color: var(--accent-color);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .class-icon { font-size: 2.5rem; margin-bottom: 5px; }
+        .class-name { font-weight: bold; font-size: 1.1rem; color: #fff; margin-bottom: 5px; }
+        .class-role { color: var(--accent-color); font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .class-stats { font-size: 0.8rem; color: #bbb; text-align: left; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; margin-top: auto;}
+        
         /* 頂部資訊欄 */
         .top-panel {
             display: grid;
@@ -62,7 +100,7 @@
         .main-content {
             display: flex;
             gap: 10px;
-            height: 400px;
+            height: 350px;
         }
 
         /* 遊戲日誌 */
@@ -110,7 +148,7 @@
             flex-wrap: wrap;
             gap: 10px;
             justify-content: center;
-            min-height: 60px;
+            min-height: 50px;
         }
 
         button {
@@ -126,10 +164,10 @@
         }
         button:hover { background-color: #505050; border-color: #999; }
         button:disabled { opacity: 0.3; cursor: not-allowed; }
-        .btn-atk { background: #5a1a1a; }
-        .btn-heal { background: #1a5a1a; }
+        .btn-atk { background: #6a1b1b; }
+        .btn-heal { background: #1b6a1b; }
         .btn-loot { background: var(--rare-color); color: white; }
-        .btn-achievement { background: #b8860b; color: black; font-weight: bold; flex: 0 0 100%; margin-top: 10px;}
+        .btn-achievement { background: #b8860b; color: black; font-weight: bold; flex: 0 0 100%; margin-top: 5px;}
 
         /* 彈出視窗 (通用) */
         .modal-overlay {
@@ -170,7 +208,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            opacity: 0.5; /* 預設未解鎖 */
+            opacity: 0.5;
             filter: grayscale(1);
         }
         .achieve-item.unlocked {
@@ -185,21 +223,14 @@
 
         /* 成就通知 (Toast) */
         #notification-area {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            pointer-events: none;
-            z-index: 200;
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            width: 300px; pointer-events: none; z-index: 200;
         }
         .toast {
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             border: 1px solid var(--accent-color);
             color: var(--accent-color);
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 5px;
+            padding: 15px; margin-bottom: 10px; border-radius: 5px;
             text-align: center;
             animation: slideDown 0.5s ease-out, fadeOut 0.5s ease-in 2.5s forwards;
             box-shadow: 0 0 10px var(--accent-color);
@@ -210,7 +241,8 @@
         .screen { display: none; }
         .active { display: block; }
         
-        @media (max-width: 600px) {
+        @media (max-width: 700px) {
+            .class-grid { grid-template-columns: 1fr 1fr; }
             .main-content { flex-direction: column-reverse; height: auto; }
             .game-log { height: 200px; }
         }
@@ -221,17 +253,74 @@
 <div class="game-container">
     <div id="notification-area"></div>
 
-    <h1>🏰 無盡試煉 v3.0</h1>
+    <h1>🏰 無盡試煉 v3.1</h1>
 
     <div id="screen-start" class="screen active">
-        <h3>選擇職業</h3>
-        <div class="controls">
-            <button onclick="startGame('barbarian')">🪓 野蠻人</button>
-            <button onclick="startGame('assassin')">🗡️ 刺客</button>
-            <button onclick="startGame('mage')">🔥 法師</button>
-            <button onclick="startGame('warlock')">🔮 術士</button>
-            <button onclick="startGame('knight')">🛡️ 騎士</button>
+        <h3>請選擇你的英雄</h3>
+        <p style="text-align:center; color:#888; font-size:0.9rem; margin-bottom: 20px;">每個職業都有獨特的屬性與初始裝備</p>
+        
+        <div class="class-grid">
+            <div class="class-card" onclick="startGame('barbarian')">
+                <div class="class-icon">🪓</div>
+                <div class="class-name">野蠻人</div>
+                <div class="class-role">狂戰士</div>
+                <p class="desc-text">體質強健，攻擊力不俗。依靠高血量和強力重擊碾壓敵人，簡單暴力。</p>
+                <div class="class-stats">
+                    ❤️ 生命: <span class="success">極高</span><br>
+                    ⚔️ 攻擊: <span class="highlight">高</span><br>
+                    🛡️ 防禦: <span class="danger">低</span>
+                </div>
+            </div>
+
+            <div class="class-card" onclick="startGame('assassin')">
+                <div class="class-icon">🗡️</div>
+                <div class="class-name">刺客</div>
+                <div class="class-role">爆擊流</div>
+                <p class="desc-text">身板脆弱，但擁有極高的爆擊率。運氣好時能瞬間秒殺強敵。</p>
+                <div class="class-stats">
+                    ❤️ 生命: <span class="danger">低</span><br>
+                    ⚔️ 攻擊: <span class="success">中</span><br>
+                    ⚡ 爆擊: <span class="highlight">極高</span>
+                </div>
+            </div>
+
+            <div class="class-card" onclick="startGame('mage')">
+                <div class="class-icon">🔥</div>
+                <div class="class-name">法師</div>
+                <div class="class-role">玻璃大砲</div>
+                <p class="desc-text">擁有毀滅性的攻擊力，但防禦極低。必須在敵人靠近前將其消滅。</p>
+                <div class="class-stats">
+                    ❤️ 生命: <span class="danger">極低</span><br>
+                    ⚔️ 攻擊: <span class="highlight">極高</span><br>
+                    🛡️ 防禦: <span class="danger">無</span>
+                </div>
+            </div>
+
+            <div class="class-card" onclick="startGame('warlock')">
+                <div class="class-icon">🔮</div>
+                <div class="class-name">術士</div>
+                <div class="class-role">吸血續航</div>
+                <p class="desc-text">數值平衡，攻擊時會吸取敵人生命。生存能力極強，適合持久戰。</p>
+                <div class="class-stats">
+                    ❤️ 生命: <span class="success">中</span><br>
+                    ⚔️ 攻擊: <span class="success">中</span><br>
+                    🩸 特效: <span class="highlight">攻擊吸血</span>
+                </div>
+            </div>
+
+            <div class="class-card" onclick="startGame('knight')">
+                <div class="class-icon">🛡️</div>
+                <div class="class-name">騎士</div>
+                <div class="class-role">鐵壁防禦</div>
+                <p class="desc-text">高防禦力與盾牌格擋，能大幅減輕傷害。雖然攻擊較低，但最為穩健。</p>
+                <div class="class-stats">
+                    ❤️ 生命: <span class="success">高</span><br>
+                    ⚔️ 攻擊: <span class="danger">低</span><br>
+                    🛡️ 防禦: <span class="highlight">極高</span>
+                </div>
+            </div>
         </div>
+
         <div class="controls">
             <button class="btn-achievement" onclick="showAchievements()">🏆 查看成就列表</button>
         </div>
@@ -246,8 +335,7 @@
         </div>
 
         <div class="main-content">
-            <div class="equipment-grid" id="equip-display">
-                </div>
+            <div class="equipment-grid" id="equip-display"></div>
             <div id="game-log" class="game-log"></div>
         </div>
 
@@ -288,8 +376,7 @@
     <div class="modal-content">
         <h3>🏆 成就紀錄</h3>
         <p style="text-align:center; font-size:0.8rem; color:#888;">成就進度會自動儲存在此瀏覽器中</p>
-        <div id="achievement-list" class="achieve-grid">
-            </div>
+        <div id="achievement-list" class="achieve-grid"></div>
         <div class="controls" style="margin-top:20px;">
             <button onclick="document.getElementById('modal-achievements').style.display='none'">關閉</button>
             <button class="btn-atk" onclick="resetAchievements()">重置成就</button>
@@ -300,24 +387,23 @@
 <script>
     /* --- 遊戲資料與常數 --- */
     const CLASSES = {
-        barbarian: { name: "野蠻人", hp: 120, atk: 12, def: 2 },
+        barbarian: { name: "野蠻人", hp: 130, atk: 12, def: 2 }, // 微調野蠻人HP
         assassin: { name: "刺客", hp: 80, atk: 15, def: 1 },
-        mage: { name: "法師", hp: 60, atk: 20, def: 0 },
+        mage: { name: "法師", hp: 60, atk: 22, def: 0 }, // 微調法師攻擊
         warlock: { name: "術士", hp: 90, atk: 12, def: 1 },
-        knight: { name: "騎士", hp: 110, atk: 9, def: 5 }
+        knight: { name: "騎士", hp: 110, atk: 9, def: 6 } // 微調騎士防禦
     };
 
     const SLOTS = ['mainHand', 'offHand', 'chest', 'helm', 'boots', 'ring', 'necklace'];
     const SLOT_NAMES = { mainHand: "主手", offHand: "副手", chest: "胸甲", helm: "頭盔", boots: "鞋子", ring: "戒指", necklace: "項鍊" };
 
-    // 成就定義
     const ACHIEVEMENTS = [
         { id: 'first_step', title: '初出茅廬', desc: '開始第一次遊戲' },
         { id: 'floor_10', title: '探險家', desc: '到達第 10 層' },
         { id: 'floor_30', title: '深淵行者', desc: '到達第 30 層' },
         { id: 'floor_50', title: '傳奇英雄', desc: '到達第 50 層' },
         { id: 'high_dmg', title: '一擊必殺', desc: '單次攻擊造成超過 80 點傷害' },
-        { id: 'iron_wall', title: '銅牆鐵壁', desc: '防禦力超過 20' },
+        { id: 'iron_wall', title: '銅牆鐵壁', desc: '防禦力超過 25' },
         { id: 'full_gear', title: '全副武裝', desc: '所有裝備欄位都穿上裝備' },
         { id: 'rich', title: '財富自由', desc: '持有金幣超過 500' },
         { id: 'hoarder', title: '藥罐子', desc: '同時持有 10 瓶藥水' },
@@ -326,103 +412,94 @@
         { id: 'death', title: '勇者長眠', desc: '第一次死亡' }
     ];
 
-    // 裝備庫 (為了簡潔，這裡保留核心結構，實際類型可擴充)
     const ITEM_DB = {
         mainHand: [
             { name: "生鏽鐵劍", stats: { atk: 3 }, allowed: null },
-            { name: "戰斧", stats: { atk: 5, spd: -1 }, allowed: ['barbarian', 'knight'] },
-            { name: "匕首", stats: { atk: 3, crit: 5 }, allowed: ['assassin', 'warlock'] },
-            { name: "法杖", stats: { atk: 6 }, allowed: ['mage', 'warlock'] },
-            { name: "長劍", stats: { atk: 5, def: 1 }, allowed: ['knight'] },
-            { name: "巨錘", stats: { atk: 8 }, allowed: ['barbarian'] },
-            { name: "骨刀", stats: { atk: 4, hp: 5 }, allowed: ['warlock'] },
-            { name: "魔導書", stats: { atk: 7 }, allowed: ['mage'] },
-            { name: "忍者刀", stats: { atk: 6, crit: 3 }, allowed: ['assassin'] },
-            { name: "王者之劍", stats: { atk: 10 }, allowed: null }
+            { name: "戰斧", stats: { atk: 6, spd: -1 }, allowed: ['barbarian', 'knight'] },
+            { name: "毒牙匕首", stats: { atk: 3, crit: 5 }, allowed: ['assassin', 'warlock'] },
+            { name: "老舊法杖", stats: { atk: 7 }, allowed: ['mage', 'warlock'] },
+            { name: "騎士長劍", stats: { atk: 5, def: 1 }, allowed: ['knight'] },
+            { name: "雷神之錘", stats: { atk: 9 }, allowed: ['barbarian'] },
+            { name: "儀式骨刀", stats: { atk: 4, hp: 10 }, allowed: ['warlock'] },
+            { name: "禁忌魔典", stats: { atk: 8 }, allowed: ['mage'] },
+            { name: "暗影之刃", stats: { atk: 6, crit: 4 }, allowed: ['assassin'] },
+            { name: "勇者之劍", stats: { atk: 10 }, allowed: null }
         ],
         offHand: [
             { name: "木盾", stats: { def: 2 }, allowed: ['knight', 'barbarian'] },
-            { name: "圓盾", stats: { def: 3 }, allowed: ['knight'] },
-            { name: "寶珠", stats: { atk: 2 }, allowed: ['mage', 'warlock'] },
+            { name: "鐵圓盾", stats: { def: 4 }, allowed: ['knight'] },
+            { name: "水晶球", stats: { atk: 2 }, allowed: ['mage', 'warlock'] },
             { name: "招架匕首", stats: { def: 1, crit: 2 }, allowed: ['assassin'] },
-            { name: "提燈", stats: { def: 1 }, allowed: null }
+            { name: "礦工提燈", stats: { def: 1, hp: 5 }, allowed: null }
         ],
         chest: [
             { name: "皮甲", stats: { def: 2 }, allowed: null },
-            { name: "鎖子甲", stats: { def: 4 }, allowed: ['knight', 'barbarian'] },
-            { name: "長袍", stats: { def: 1, atk: 2 }, allowed: ['mage', 'warlock'] },
-            { name: "板甲", stats: { def: 8, spd: -2 }, allowed: ['knight'] }
+            { name: "鎖子甲", stats: { def: 5 }, allowed: ['knight', 'barbarian'] },
+            { name: "法師長袍", stats: { def: 1, atk: 3 }, allowed: ['mage', 'warlock'] },
+            { name: "重型板甲", stats: { def: 9, spd: -2 }, allowed: ['knight'] },
+            { name: "刺客披風", stats: { def: 2, crit: 2 }, allowed: ['assassin'] }
         ],
         helm: [
             { name: "頭帶", stats: { atk: 1 }, allowed: null },
-            { name: "鐵盔", stats: { def: 3 }, allowed: ['knight', 'barbarian'] },
-            { name: "兜帽", stats: { def: 1, crit: 1 }, allowed: ['assassin'] }
+            { name: "十字軍頭盔", stats: { def: 4 }, allowed: ['knight'] },
+            { name: "獸角盔", stats: { def: 2, hp: 10 }, allowed: ['barbarian'] },
+            { name: "神秘兜帽", stats: { def: 1, atk: 1 }, allowed: ['mage', 'warlock'] }
         ],
         boots: [
-            { name: "皮靴", stats: { def: 1 }, allowed: null },
-            { name: "鐵靴", stats: { def: 3 }, allowed: ['knight'] },
-            { name: "便鞋", stats: { atk: 1 }, allowed: ['mage'] }
+            { name: "舊皮靴", stats: { def: 1 }, allowed: null },
+            { name: "鋼鐵戰靴", stats: { def: 3 }, allowed: ['knight'] },
+            { name: "輕靈之靴", stats: { atk: 1 }, allowed: ['mage', 'assassin'] }
         ],
         ring: [
             { name: "鐵戒指", stats: { def: 1 }, allowed: null },
-            { name: "寶石戒", stats: { atk: 2 }, allowed: null },
-            { name: "生命戒", stats: { hp: 10 }, allowed: null }
+            { name: "紅寶石戒", stats: { atk: 2 }, allowed: null },
+            { name: "生命之戒", stats: { hp: 15 }, allowed: null },
+            { name: "幸運指環", stats: { crit: 2 }, allowed: null }
         ],
         necklace: [
-            { name: "護身符", stats: { def: 1 }, allowed: null },
-            { name: "牙齒項鍊", stats: { atk: 1, crit: 1 }, allowed: null }
+            { name: "守護護符", stats: { def: 2 }, allowed: null },
+            { name: "狼牙項鍊", stats: { atk: 1, crit: 1 }, allowed: null },
+            { name: "藍寶石墜", stats: { atk: 3 }, allowed: null }
         ]
     };
 
     /* --- 遊戲狀態 --- */
-    let player = {
-        base: {}, currentHp: 0, potions: 2, gold: 0, equipment: {}, classKey: ''
-    };
+    let player = { base: {}, currentHp: 0, potions: 2, gold: 0, equipment: {}, classKey: '' };
     let floor = 0;
     let tempLoot = null;
     let enemy = null;
     let unlockedAchievements = [];
 
-    /* --- 初始化 --- */
-    window.onload = function() {
-        loadAchievements();
-    };
+    window.onload = function() { loadAchievements(); };
 
+    /* --- 成就系統 --- */
     function loadAchievements() {
         const stored = localStorage.getItem('tower_game_achievements');
-        if (stored) {
-            unlockedAchievements = JSON.parse(stored);
-        }
+        if (stored) unlockedAchievements = JSON.parse(stored);
     }
-
     function checkAchievement(id) {
         if (!unlockedAchievements.includes(id)) {
             unlockedAchievements.push(id);
             localStorage.setItem('tower_game_achievements', JSON.stringify(unlockedAchievements));
-            
-            // 顯示通知
             const ach = ACHIEVEMENTS.find(a => a.id === id);
             showToast(`🏆 成就解鎖：${ach.title}`);
         }
     }
-
     function showToast(msg) {
         const area = document.getElementById('notification-area');
         const div = document.createElement('div');
         div.className = 'toast';
         div.innerHTML = msg;
         area.appendChild(div);
-        setTimeout(() => div.remove(), 3000);
+        setTimeout(() => div.remove(), 3500);
     }
-
     function resetAchievements() {
         if(confirm("確定要刪除所有成就紀錄嗎？")) {
             localStorage.removeItem('tower_game_achievements');
             unlockedAchievements = [];
-            showAchievements(); // refresh
+            showAchievements();
         }
     }
-
     function showAchievements() {
         const list = document.getElementById('achievement-list');
         list.innerHTML = '';
@@ -435,16 +512,14 @@
                     <h4>${ach.title}</h4>
                     <p>${ach.desc}</p>
                 </div>
-                <div class="achieve-status">
-                    ${isUnlocked ? '✅' : '🔒'}
-                </div>
+                <div class="achieve-status">${isUnlocked ? '✅' : '🔒'}</div>
             `;
             list.appendChild(div);
         });
         document.getElementById('modal-achievements').style.display = 'flex';
     }
 
-    /* --- 遊戲邏輯 --- */
+    /* --- 核心邏輯 --- */
     function log(msg, type='') {
         const el = document.getElementById('game-log');
         const div = document.createElement('div');
@@ -471,7 +546,7 @@
         document.getElementById('screen-over').classList.remove('active');
         document.getElementById('screen-game').classList.add('active');
         
-        // 初始裝備
+        // 初始裝備配置
         const starterWeapons = {
             barbarian: ITEM_DB.mainHand[1],
             assassin: ITEM_DB.mainHand[2],
@@ -481,9 +556,9 @@
         };
         equip(JSON.parse(JSON.stringify(starterWeapons[classKey])), 'mainHand', true);
 
-        checkAchievement('first_step'); // 成就檢查
+        checkAchievement('first_step');
         updateUI();
-        log(`你選擇了 ${cls.name}，踏入試煉之塔！`);
+        log(`你選擇了 <span class="highlight">${cls.name}</span>，準備好面對試煉了嗎？`);
         nextFloor();
     }
 
@@ -518,10 +593,7 @@
             const item = player.equipment[slot];
             const div = document.createElement('div');
             div.className = 'equip-slot';
-            div.innerHTML = `
-                <span class="label">${SLOT_NAMES[slot]}</span>
-                <span class="item-name">${item ? item.name : '---'}</span>
-            `;
+            div.innerHTML = `<span class="label">${SLOT_NAMES[slot]}</span><span class="item-name">${item ? item.name : '---'}</span>`;
             if (item) {
                 let txt = '';
                 for (let k in item.stats) txt += `${k.toUpperCase()}+${item.stats[k]} `;
@@ -530,20 +602,14 @@
             grid.appendChild(div);
         });
 
-        // 成就檢查：防禦力、財富、藥水
-        if (stats.def >= 20) checkAchievement('iron_wall');
+        if (stats.def >= 25) checkAchievement('iron_wall');
         if (player.gold >= 500) checkAchievement('rich');
         if (player.potions >= 10) checkAchievement('hoarder');
-        
-        // 成就檢查：全身裝備
-        const isFull = SLOTS.every(s => player.equipment[s] !== null);
-        if (isFull) checkAchievement('full_gear');
+        if (SLOTS.every(s => player.equipment[s] !== null)) checkAchievement('full_gear');
     }
 
     function nextFloor() {
         floor++;
-        
-        // 成就檢查：樓層
         if (floor >= 10) checkAchievement('floor_10');
         if (floor >= 30) checkAchievement('floor_30');
         if (floor >= 50) checkAchievement('floor_50');
@@ -552,25 +618,21 @@
         log(`<br>--- <strong>第 ${floor} 層</strong> ---`, 'highlight');
         
         const rand = Math.random();
-        if (floor % 10 === 0) {
-            encounterMonster(true);
-        } else if (rand < 0.7) {
-            encounterMonster(false);
-        } else {
-            triggerEvent();
-        }
+        if (floor % 10 === 0) encounterMonster(true);
+        else if (rand < 0.7) encounterMonster(false);
+        else triggerEvent();
     }
 
     function encounterMonster(isBoss) {
-        const scale = 1 + (floor * 0.1);
-        const names = ["史萊姆", "哥布林", "骷髏兵", "獸人", "幽靈", "石像鬼", "食人魔", "黑騎士", "雙足飛龍", "惡魔"];
-        const nameIdx = isBoss ? 9 : Math.min(names.length - 2, Math.floor(floor / 5));
+        const scale = 1 + (floor * 0.12); // 微幅增加難度曲線
+        const names = ["史萊姆", "哥布林", "骷髏兵", "狂暴獸人", "詛咒幽靈", "石像鬼", "食人魔", "黑暗騎士", "雙足飛龍", "深淵惡魔"];
+        const nameIdx = isBoss ? 9 : Math.min(names.length - 2, Math.floor(floor / 4));
         
         enemy = {
-            name: (isBoss ? "首領: " : "") + names[isBoss ? 9 : Math.floor(Math.random() * (nameIdx + 1))],
-            maxHp: Math.floor((isBoss ? 150 : 30) * scale),
-            currentHp: Math.floor((isBoss ? 150 : 30) * scale),
-            atk: Math.floor((isBoss ? 15 : 5) * scale) + floor,
+            name: (isBoss ? "☠️ 首領: " : "") + names[isBoss ? 9 : Math.floor(Math.random() * (nameIdx + 1))],
+            maxHp: Math.floor((isBoss ? 200 : 35) * scale),
+            currentHp: Math.floor((isBoss ? 200 : 35) * scale),
+            atk: Math.floor((isBoss ? 18 : 6) * scale) + Math.floor(floor/2),
         };
         log(`遭遇敵襲：<span class="danger">${enemy.name}</span> (HP:${enemy.maxHp}, ATK:${enemy.atk})`);
         renderCombatControls();
@@ -597,37 +659,45 @@
     function combatRound() {
         const stats = getPlayerStats();
         
-        // 玩家攻擊
+        // Player Attack
         let isCrit = Math.random() * 100 < stats.crit;
-        if (isCrit) checkAchievement('lucky'); // 成就檢查
-
-        let dmg = Math.floor(stats.atk * (isCrit ? 1.5 : 1) * (0.9 + Math.random()*0.2));
+        if (isCrit) checkAchievement('lucky');
+        let dmg = Math.floor(stats.atk * (isCrit ? 1.6 : 1) * (0.9 + Math.random()*0.2));
         
-        if (dmg >= 80) checkAchievement('high_dmg'); // 成就檢查
+        if (player.classKey === 'warlock') {
+            let heal = Math.ceil(dmg * 0.15); // 吸血 15%
+            player.currentHp += heal;
+            log(`(吸血) 恢復了 ${heal} 生命`, 'success');
+        }
 
+        if (dmg >= 80) checkAchievement('high_dmg');
         enemy.currentHp -= dmg;
         log(`你對 ${enemy.name} 造成 ${dmg} 傷害${isCrit?' (爆擊!)':''}。`);
 
         if (enemy.currentHp <= 0) {
             log(`戰勝了 ${enemy.name}！`, 'success');
-            player.gold += Math.floor(Math.random() * 10) + floor;
+            player.gold += Math.floor(Math.random() * 15) + floor;
             winReward();
             return;
         }
 
-        // 怪物攻擊
+        // Enemy Attack
         let incoming = Math.max(1, Math.floor((enemy.atk - stats.def) * (0.9 + Math.random()*0.2)));
         
-        // 成就檢查：格擋/防禦高導致0傷 (系統設定最少1，但如果未來改公式有可能0，這裡暫時模擬)
-        // 為了讓成就有機會達成，我們修改規則：如果防禦夠高，隨機有機會完全格擋
-        if (stats.def > enemy.atk && Math.random() > 0.5) {
+        // 騎士格擋判定
+        if (player.classKey === 'knight' && Math.random() < 0.25) {
+            incoming = Math.floor(incoming * 0.3); // 減傷 70%
+            log("🛡️ 格擋成功！大幅減輕傷害！", 'highlight');
+        }
+        // 高防禦完全防禦判定
+        else if (stats.def > enemy.atk * 1.2 && Math.random() > 0.6) {
             incoming = 0;
             checkAchievement('untouchable');
-            log(`🛡️ 完美的防禦！你擋下了所有傷害！`, 'success');
-        } else {
-            player.currentHp -= incoming;
-            log(`${enemy.name} 反擊，你受到 ${incoming} 傷害。`, 'danger');
+            log(`🛡️ 完美的防禦！`, 'success');
         }
+
+        player.currentHp -= incoming;
+        log(`${enemy.name} 反擊，你受到 ${incoming} 傷害。`, 'danger');
         
         updateUI();
         if (player.currentHp <= 0) gameOver();
@@ -636,12 +706,11 @@
     function usePotion() {
         if (player.potions > 0) {
             player.potions--;
-            const heal = 50;
+            const heal = 60; // 藥水增強
             const stats = getPlayerStats();
             player.currentHp = Math.min(stats.hp, player.currentHp + heal);
             log(`使用了藥水，回復 ${heal} HP。`, 'success');
             
-            // 怪物趁機攻擊
             let incoming = Math.floor(enemy.atk * 0.8);
             player.currentHp -= incoming;
             log(`${enemy.name} 趁機攻擊，造成 ${incoming} 傷害。`);
@@ -652,9 +721,8 @@
     }
 
     function winReward() {
-        if (Math.random() < 0.5) {
-             generateLoot();
-        } else {
+        if (Math.random() < 0.5) generateLoot();
+        else {
             log("怪物掉落了一些金幣。");
             renderNextButton();
         }
@@ -663,22 +731,9 @@
     function triggerEvent() {
         const evts = [
             { t: "發現寶箱", act: () => { log("打開寶箱，發現裝備！", 'highlight'); generateLoot(); } },
-            { t: "遇到商人", act: () => { 
-                log("商人送了你一瓶藥水。"); 
-                player.potions++; 
-                renderNextButton(); 
-            }},
-            { t: "神秘泉水", act: () => { 
-                log("喝下泉水，傷勢完全恢復。"); 
-                player.currentHp = getPlayerStats().hp; 
-                renderNextButton(); 
-            }},
-            { t: "小錢袋", act: () => {
-                let g = 50;
-                log(`撿到錢袋，獲得 ${g} 金幣。`, 'success');
-                player.gold += g;
-                renderNextButton();
-            }}
+            { t: "遇到商人", act: () => { log("商人送了你一瓶藥水。"); player.potions++; renderNextButton(); }},
+            { t: "神秘泉水", act: () => { log("喝下泉水，傷勢完全恢復。", 'success'); player.currentHp = getPlayerStats().hp; renderNextButton(); }},
+            { t: "小錢袋", act: () => { let g = 50 + floor*2; log(`撿到錢袋，獲得 ${g} 金幣。`, 'highlight'); player.gold += g; renderNextButton(); }}
         ];
         const evt = evts[Math.floor(Math.random() * evts.length)];
         log(`事件: ${evt.t}`);
@@ -688,14 +743,9 @@
 
     function generateLoot() {
         const slot = SLOTS[Math.floor(Math.random() * SLOTS.length)];
-        // 這裡簡化資料庫存取，隨機取一個該部位的裝備
-        // 為了完整性，若資料庫該部位沒有符合職業的裝備，就給通用裝備
         let candidates = ITEM_DB[slot].filter(item => item.allowed === null || item.allowed.includes(player.classKey));
         if (candidates.length === 0) candidates = ITEM_DB[slot].filter(item => item.allowed === null);
-
-        if (candidates.length === 0) {
-            renderNextButton(); return;
-        }
+        if (candidates.length === 0) { renderNextButton(); return; }
 
         const baseItem = candidates[Math.floor(Math.random() * candidates.length)];
         let newItem = JSON.parse(JSON.stringify(baseItem));
@@ -705,8 +755,7 @@
         for (let key in newItem.stats) {
             if (newItem.stats[key] > 0) newItem.stats[key] = Math.ceil(newItem.stats[key] * multiplier * (0.8 + Math.random() * 0.4));
         }
-
-        if (Math.random() < 0.2) {
+        if (Math.random() < 0.25) {
             newItem.name = "精良的 " + newItem.name;
             newItem.stats.atk = (newItem.stats.atk || 0) + Math.ceil(floor/2);
         }
@@ -718,7 +767,6 @@
     function showLootModal(newItem) {
         const modal = document.getElementById('modal-loot');
         const currentItem = player.equipment[newItem.slot];
-
         let curHtml = currentItem ? `<strong>${currentItem.name}</strong><br>` : "無<br>";
         if (currentItem) for (let k in currentItem.stats) curHtml += `${k.toUpperCase()}: ${currentItem.stats[k]}<br>`;
         document.getElementById('loot-current').innerHTML = curHtml;
@@ -730,15 +778,12 @@
             newHtml += `${k.toUpperCase()}: ${newItem.stats[k]} <span class="${colorClass}">(${diff>0?'+':''}${diff})</span><br>`;
         }
         document.getElementById('loot-new').innerHTML = newHtml;
-
         modal.style.display = 'flex';
     }
 
     function confirmLoot(accept) {
         document.getElementById('modal-loot').style.display = 'none';
-        if (accept && tempLoot) {
-            equip(tempLoot, tempLoot.slot);
-        }
+        if (accept && tempLoot) equip(tempLoot, tempLoot.slot);
         tempLoot = null;
         renderNextButton();
     }
@@ -753,7 +798,7 @@
         const area = document.getElementById('action-area');
         area.innerHTML = '';
         const btn = document.createElement('button');
-        btn.innerText = '前往下一層';
+        btn.innerText = '👣 前往下一層';
         btn.onclick = nextFloor;
         area.appendChild(btn);
     }

@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>無盡試煉之塔 v3.0</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #ffd700;
+            --rare-color: #a335ee;
+            --danger-color: #ff4444;
+            --success-color: #44ff44;
+            --panel-bg: #1e1e1e;
+            --border-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--panel-bg);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+        }
+
+        h1, h2, h3 { text-align: center; margin: 5px 0; color: var(--accent-color); }
+        .highlight { color: var(--accent-color); font-weight: bold; }
+        .danger { color: var(--danger-color); }
+        .success { color: var(--success-color); }
+
+        /* 頂部資訊欄 */
+        .top-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            background: #252525;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 10px;
+            height: 400px;
+        }
+
+        /* 遊戲日誌 */
+        .game-log {
+            flex: 2;
+            background: #000;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #1a1a1a; padding-bottom: 2px;}
+
+        /* 裝備欄位 */
+        .equipment-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 5px;
+            background: #2a2a2a;
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            overflow-y: auto;
+        }
+
+        .equip-slot {
+            background: #333;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .equip-slot span.label { color: #888; font-size: 0.7rem; }
+        .equip-slot span.item-name { color: var(--accent-color); font-weight: bold; }
+
+        /* 按鈕區域 */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            min-height: 60px;
+        }
+
+        button {
+            background-color: #3a3a3a;
+            color: white;
+            border: 1px solid #555;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.2s;
+            flex: 1;
+        }
+        button:hover { background-color: #505050; border-color: #999; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn-atk { background: #5a1a1a; }
+        .btn-heal { background: #1a5a1a; }
+        .btn-loot { background: var(--rare-color); color: white; }
+        .btn-achievement { background: #b8860b; color: black; font-weight: bold; flex: 0 0 100%; margin-top: 10px;}
+
+        /* 彈出視窗 (通用) */
+        .modal-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.9);
+            display: none; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background: #222;
+            border: 2px solid var(--accent-color);
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        /* 裝備比較樣式 */
+        .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .compare-card { background: #333; padding: 10px; border-radius: 5px; }
+        .stat-diff-pos { color: var(--success-color); }
+        .stat-diff-neg { color: var(--danger-color); }
+
+        /* 成就列表樣式 */
+        .achieve-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            text-align: left;
+        }
+        .achieve-item {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            opacity: 0.5; /* 預設未解鎖 */
+            filter: grayscale(1);
+        }
+        .achieve-item.unlocked {
+            opacity: 1;
+            filter: grayscale(0);
+            border-color: var(--accent-color);
+            background: #2a2200;
+        }
+        .achieve-info h4 { margin: 0; text-align: left; color: var(--accent-color); }
+        .achieve-info p { margin: 2px 0 0; font-size: 0.8rem; color: #aaa; }
+        .achieve-status { font-size: 1.2rem; }
+
+        /* 成就通知 (Toast) */
+        #notification-area {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            pointer-events: none;
+            z-index: 200;
+        }
+        .toast {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            text-align: center;
+            animation: slideDown 0.5s ease-out, fadeOut 0.5s ease-in 2.5s forwards;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        .screen { display: none; }
+        .active { display: block; }
+        
+        @media (max-width: 600px) {
+            .main-content { flex-direction: column-reverse; height: auto; }
+            .game-log { height: 200px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div id="notification-area"></div>
+
+    <h1>🏰 無盡試煉 v3.0</h1>
+
+    <div id="screen-start" class="screen active">
+        <h3>選擇職業</h3>
+        <div class="controls">
+            <button onclick="startGame('barbarian')">🪓 野蠻人</button>
+            <button onclick="startGame('assassin')">🗡️ 刺客</button>
+            <button onclick="startGame('mage')">🔥 法師</button>
+            <button onclick="startGame('warlock')">🔮 術士</button>
+            <button onclick="startGame('knight')">🛡️ 騎士</button>
+        </div>
+        <div class="controls">
+            <button class="btn-achievement" onclick="showAchievements()">🏆 查看成就列表</button>
+        </div>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div class="top-panel">
+            <div><span id="ui-class"></span> Lv.<span id="ui-floor">1</span></div>
+            <div class="danger">HP <span id="ui-hp"></span>/<span id="ui-maxhp"></span></div>
+            <div class="highlight">ATK <span id="ui-atk"></span></div>
+            <div class="success">DEF <span id="ui-def"></span></div>
+        </div>
+
+        <div class="main-content">
+            <div class="equipment-grid" id="equip-display">
+                </div>
+            <div id="game-log" class="game-log"></div>
+        </div>
+
+        <div class="controls" id="action-area"></div>
+    </div>
+
+    <div id="screen-over" class="screen" style="text-align:center;">
+        <h2 class="danger">💀 挑戰失敗 💀</h2>
+        <p>最終層數: <span id="final-floor" class="highlight"></span></p>
+        <div class="controls">
+            <button onclick="location.reload()">重新開始</button>
+            <button class="btn-achievement" onclick="showAchievements()">🏆 查看成就</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-loot" class="modal-overlay">
+    <div class="modal-content">
+        <h3>🎁 獲得戰利品!</h3>
+        <div class="compare-grid">
+            <div class="compare-card" style="opacity: 0.7;">
+                <h4>目前裝備</h4>
+                <div id="loot-current">無</div>
+            </div>
+            <div class="compare-card" style="border: 1px solid var(--accent-color);">
+                <h4 class="highlight">新裝備</h4>
+                <div id="loot-new"></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn-heal" onclick="confirmLoot(true)">裝備</button>
+            <button class="btn-atk" onclick="confirmLoot(false)">丟棄</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-achievements" class="modal-overlay" onclick="if(event.target === this) this.style.display='none'">
+    <div class="modal-content">
+        <h3>🏆 成就紀錄</h3>
+        <p style="text-align:center; font-size:0.8rem; color:#888;">成就進度會自動儲存在此瀏覽器中</p>
+        <div id="achievement-list" class="achieve-grid">
+            </div>
+        <div class="controls" style="margin-top:20px;">
+            <button onclick="document.getElementById('modal-achievements').style.display='none'">關閉</button>
+            <button class="btn-atk" onclick="resetAchievements()">重置成就</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* --- 遊戲資料與常數 --- */
+    const CLASSES = {
+        barbarian: { name: "野蠻人", hp: 120, atk: 12, def: 2 },
+        assassin: { name: "刺客", hp: 80, atk: 15, def: 1 },
+        mage: { name: "法師", hp: 60, atk: 20, def: 0 },
+        warlock: { name: "術士", hp: 90, atk: 12, def: 1 },
+        knight: { name: "騎士", hp: 110, atk: 9, def: 5 }
+    };
+
+    const SLOTS = ['mainHand', 'offHand', 'chest', 'helm', 'boots', 'ring', 'necklace'];
+    const SLOT_NAMES = { mainHand: "主手", offHand: "副手", chest: "胸甲", helm: "頭盔", boots: "鞋子", ring: "戒指", necklace: "項鍊" };
+
+    // 成就定義
+    const ACHIEVEMENTS = [
+        { id: 'first_step', title: '初出茅廬', desc: '開始第一次遊戲' },
+        { id: 'floor_10', title: '探險家', desc: '到達第 10 層' },
+        { id: 'floor_30', title: '深淵行者', desc: '到達第 30 層' },
+        { id: 'floor_50', title: '傳奇英雄', desc: '到達第 50 層' },
+        { id: 'high_dmg', title: '一擊必殺', desc: '單次攻擊造成超過 80 點傷害' },
+        { id: 'iron_wall', title: '銅牆鐵壁', desc: '防禦力超過 20' },
+        { id: 'full_gear', title: '全副武裝', desc: '所有裝備欄位都穿上裝備' },
+        { id: 'rich', title: '財富自由', desc: '持有金幣超過 500' },
+        { id: 'hoarder', title: '藥罐子', desc: '同時持有 10 瓶藥水' },
+        { id: 'lucky', title: '幸運一擊', desc: '觸發一次爆擊' },
+        { id: 'untouchable', title: '毫髮無傷', desc: '受到攻擊但傷害為 0' },
+        { id: 'death', title: '勇者長眠', desc: '第一次死亡' }
+    ];
+
+    // 裝備庫 (為了簡潔，這裡保留核心結構，實際類型可擴充)
+    const ITEM_DB = {
+        mainHand: [
+            { name: "生鏽鐵劍", stats: { atk: 3 }, allowed: null },
+            { name: "戰斧", stats: { atk: 5, spd: -1 }, allowed: ['barbarian', 'knight'] },
+            { name: "匕首", stats: { atk: 3, crit: 5 }, allowed: ['assassin', 'warlock'] },
+            { name: "法杖", stats: { atk: 6 }, allowed: ['mage', 'warlock'] },
+            { name: "長劍", stats: { atk: 5, def: 1 }, allowed: ['knight'] },
+            { name: "巨錘", stats: { atk: 8 }, allowed: ['barbarian'] },
+            { name: "骨刀", stats: { atk: 4, hp: 5 }, allowed: ['warlock'] },
+            { name: "魔導書", stats: { atk: 7 }, allowed: ['mage'] },
+            { name: "忍者刀", stats: { atk: 6, crit: 3 }, allowed: ['assassin'] },
+            { name: "王者之劍", stats: { atk: 10 }, allowed: null }
+        ],
+        offHand: [
+            { name: "木盾", stats: { def: 2 }, allowed: ['knight', 'barbarian'] },
+            { name: "圓盾", stats: { def: 3 }, allowed: ['knight'] },
+            { name: "寶珠", stats: { atk: 2 }, allowed: ['mage', 'warlock'] },
+            { name: "招架匕首", stats: { def: 1, crit: 2 }, allowed: ['assassin'] },
+            { name: "提燈", stats: { def: 1 }, allowed: null }
+        ],
+        chest: [
+            { name: "皮甲", stats: { def: 2 }, allowed: null },
+            { name: "鎖子甲", stats: { def: 4 }, allowed: ['knight', 'barbarian'] },
+            { name: "長袍", stats: { def: 1, atk: 2 }, allowed: ['mage', 'warlock'] },
+            { name: "板甲", stats: { def: 8, spd: -2 }, allowed: ['knight'] }
+        ],
+        helm: [
+            { name: "頭帶", stats: { atk: 1 }, allowed: null },
+            { name: "鐵盔", stats: { def: 3 }, allowed: ['knight', 'barbarian'] },
+            { name: "兜帽", stats: { def: 1, crit: 1 }, allowed: ['assassin'] }
+        ],
+        boots: [
+            { name: "皮靴", stats: { def: 1 }, allowed: null },
+            { name: "鐵靴", stats: { def: 3 }, allowed: ['knight'] },
+            { name: "便鞋", stats: { atk: 1 }, allowed: ['mage'] }
+        ],
+        ring: [
+            { name: "鐵戒指", stats: { def: 1 }, allowed: null },
+            { name: "寶石戒", stats: { atk: 2 }, allowed: null },
+            { name: "生命戒", stats: { hp: 10 }, allowed: null }
+        ],
+        necklace: [
+            { name: "護身符", stats: { def: 1 }, allowed: null },
+            { name: "牙齒項鍊", stats: { atk: 1, crit: 1 }, allowed: null }
+        ]
+    };
+
+    /* --- 遊戲狀態 --- */
+    let player = {
+        base: {}, currentHp: 0, potions: 2, gold: 0, equipment: {}, classKey: ''
+    };
+    let floor = 0;
+    let tempLoot = null;
+    let enemy = null;
+    let unlockedAchievements = [];
+
+    /* --- 初始化 --- */
+    window.onload = function() {
+        loadAchievements();
+    };
+
+    function loadAchievements() {
+        const stored = localStorage.getItem('tower_game_achievements');
+        if (stored) {
+            unlockedAchievements = JSON.parse(stored);
+        }
+    }
+
+    function checkAchievement(id) {
+        if (!unlockedAchievements.includes(id)) {
+            unlockedAchievements.push(id);
+            localStorage.setItem('tower_game_achievements', JSON.stringify(unlockedAchievements));
+            
+            // 顯示通知
+            const ach = ACHIEVEMENTS.find(a => a.id === id);
+            showToast(`🏆 成就解鎖：${ach.title}`);
+        }
+    }
+
+    function showToast(msg) {
+        const area = document.getElementById('notification-area');
+        const div = document.createElement('div');
+        div.className = 'toast';
+        div.innerHTML = msg;
+        area.appendChild(div);
+        setTimeout(() => div.remove(), 3000);
+    }
+
+    function resetAchievements() {
+        if(confirm("確定要刪除所有成就紀錄嗎？")) {
+            localStorage.removeItem('tower_game_achievements');
+            unlockedAchievements = [];
+            showAchievements(); // refresh
+        }
+    }
+
+    function showAchievements() {
+        const list = document.getElementById('achievement-list');
+        list.innerHTML = '';
+        ACHIEVEMENTS.forEach(ach => {
+            const isUnlocked = unlockedAchievements.includes(ach.id);
+            const div = document.createElement('div');
+            div.className = `achieve-item ${isUnlocked ? 'unlocked' : ''}`;
+            div.innerHTML = `
+                <div class="achieve-info">
+                    <h4>${ach.title}</h4>
+                    <p>${ach.desc}</p>
+                </div>
+                <div class="achieve-status">
+                    ${isUnlocked ? '✅' : '🔒'}
+                </div>
+            `;
+            list.appendChild(div);
+        });
+        document.getElementById('modal-achievements').style.display = 'flex';
+    }
+
+    /* --- 遊戲邏輯 --- */
+    function log(msg, type='') {
+        const el = document.getElementById('game-log');
+        const div = document.createElement('div');
+        div.className = 'log-entry ' + type;
+        div.innerHTML = msg;
+        el.appendChild(div);
+        el.scrollTop = el.scrollHeight;
+    }
+
+    function startGame(classKey) {
+        const cls = CLASSES[classKey];
+        player = {
+            classKey: classKey,
+            base: { ...cls },
+            currentHp: cls.hp,
+            potions: 2,
+            gold: 0,
+            equipment: {}
+        };
+        SLOTS.forEach(slot => player.equipment[slot] = null);
+        
+        floor = 0;
+        document.getElementById('screen-start').classList.remove('active');
+        document.getElementById('screen-over').classList.remove('active');
+        document.getElementById('screen-game').classList.add('active');
+        
+        // 初始裝備
+        const starterWeapons = {
+            barbarian: ITEM_DB.mainHand[1],
+            assassin: ITEM_DB.mainHand[2],
+            mage: ITEM_DB.mainHand[3],
+            warlock: ITEM_DB.mainHand[6],
+            knight: ITEM_DB.mainHand[4]
+        };
+        equip(JSON.parse(JSON.stringify(starterWeapons[classKey])), 'mainHand', true);
+
+        checkAchievement('first_step'); // 成就檢查
+        updateUI();
+        log(`你選擇了 ${cls.name}，踏入試煉之塔！`);
+        nextFloor();
+    }
+
+    function getPlayerStats() {
+        let stats = { hp: player.base.hp, atk: player.base.atk, def: player.base.def, crit: 0 };
+        for (let slot of SLOTS) {
+            const item = player.equipment[slot];
+            if (item && item.stats) {
+                if (item.stats.hp) stats.hp += item.stats.hp;
+                if (item.stats.atk) stats.atk += item.stats.atk;
+                if (item.stats.def) stats.def += item.stats.def;
+                if (item.stats.crit) stats.crit += item.stats.crit;
+            }
+        }
+        return stats;
+    }
+
+    function updateUI() {
+        const stats = getPlayerStats();
+        if (player.currentHp > stats.hp) player.currentHp = stats.hp;
+
+        document.getElementById('ui-class').innerText = CLASSES[player.classKey].name;
+        document.getElementById('ui-floor').innerText = floor;
+        document.getElementById('ui-hp').innerText = Math.floor(player.currentHp);
+        document.getElementById('ui-maxhp').innerText = stats.hp;
+        document.getElementById('ui-atk').innerText = stats.atk;
+        document.getElementById('ui-def').innerText = stats.def;
+
+        const grid = document.getElementById('equip-display');
+        grid.innerHTML = '';
+        SLOTS.forEach(slot => {
+            const item = player.equipment[slot];
+            const div = document.createElement('div');
+            div.className = 'equip-slot';
+            div.innerHTML = `
+                <span class="label">${SLOT_NAMES[slot]}</span>
+                <span class="item-name">${item ? item.name : '---'}</span>
+            `;
+            if (item) {
+                let txt = '';
+                for (let k in item.stats) txt += `${k.toUpperCase()}+${item.stats[k]} `;
+                div.title = txt;
+            }
+            grid.appendChild(div);
+        });
+
+        // 成就檢查：防禦力、財富、藥水
+        if (stats.def >= 20) checkAchievement('iron_wall');
+        if (player.gold >= 500) checkAchievement('rich');
+        if (player.potions >= 10) checkAchievement('hoarder');
+        
+        // 成就檢查：全身裝備
+        const isFull = SLOTS.every(s => player.equipment[s] !== null);
+        if (isFull) checkAchievement('full_gear');
+    }
+
+    function nextFloor() {
+        floor++;
+        
+        // 成就檢查：樓層
+        if (floor >= 10) checkAchievement('floor_10');
+        if (floor >= 30) checkAchievement('floor_30');
+        if (floor >= 50) checkAchievement('floor_50');
+
+        updateUI();
+        log(`<br>--- <strong>第 ${floor} 層</strong> ---`, 'highlight');
+        
+        const rand = Math.random();
+        if (floor % 10 === 0) {
+            encounterMonster(true);
+        } else if (rand < 0.7) {
+            encounterMonster(false);
+        } else {
+            triggerEvent();
+        }
+    }
+
+    function encounterMonster(isBoss) {
+        const scale = 1 + (floor * 0.1);
+        const names = ["史萊姆", "哥布林", "骷髏兵", "獸人", "幽靈", "石像鬼", "食人魔", "黑騎士", "雙足飛龍", "惡魔"];
+        const nameIdx = isBoss ? 9 : Math.min(names.length - 2, Math.floor(floor / 5));
+        
+        enemy = {
+            name: (isBoss ? "首領: " : "") + names[isBoss ? 9 : Math.floor(Math.random() * (nameIdx + 1))],
+            maxHp: Math.floor((isBoss ? 150 : 30) * scale),
+            currentHp: Math.floor((isBoss ? 150 : 30) * scale),
+            atk: Math.floor((isBoss ? 15 : 5) * scale) + floor,
+        };
+        log(`遭遇敵襲：<span class="danger">${enemy.name}</span> (HP:${enemy.maxHp}, ATK:${enemy.atk})`);
+        renderCombatControls();
+    }
+
+    function renderCombatControls() {
+        const area = document.getElementById('action-area');
+        area.innerHTML = '';
+        
+        const atkBtn = document.createElement('button');
+        atkBtn.className = 'btn-atk';
+        atkBtn.innerText = '⚔️ 攻擊';
+        atkBtn.onclick = combatRound;
+        area.appendChild(atkBtn);
+
+        const potBtn = document.createElement('button');
+        potBtn.className = 'btn-heal';
+        potBtn.innerText = `🧪 藥水(${player.potions})`;
+        potBtn.onclick = usePotion;
+        if (player.potions <= 0) potBtn.disabled = true;
+        area.appendChild(potBtn);
+    }
+
+    function combatRound() {
+        const stats = getPlayerStats();
+        
+        // 玩家攻擊
+        let isCrit = Math.random() * 100 < stats.crit;
+        if (isCrit) checkAchievement('lucky'); // 成就檢查
+
+        let dmg = Math.floor(stats.atk * (isCrit ? 1.5 : 1) * (0.9 + Math.random()*0.2));
+        
+        if (dmg >= 80) checkAchievement('high_dmg'); // 成就檢查
+
+        enemy.currentHp -= dmg;
+        log(`你對 ${enemy.name} 造成 ${dmg} 傷害${isCrit?' (爆擊!)':''}。`);
+
+        if (enemy.currentHp <= 0) {
+            log(`戰勝了 ${enemy.name}！`, 'success');
+            player.gold += Math.floor(Math.random() * 10) + floor;
+            winReward();
+            return;
+        }
+
+        // 怪物攻擊
+        let incoming = Math.max(1, Math.floor((enemy.atk - stats.def) * (0.9 + Math.random()*0.2)));
+        
+        // 成就檢查：格擋/防禦高導致0傷 (系統設定最少1，但如果未來改公式有可能0，這裡暫時模擬)
+        // 為了讓成就有機會達成，我們修改規則：如果防禦夠高，隨機有機會完全格擋
+        if (stats.def > enemy.atk && Math.random() > 0.5) {
+            incoming = 0;
+            checkAchievement('untouchable');
+            log(`🛡️ 完美的防禦！你擋下了所有傷害！`, 'success');
+        } else {
+            player.currentHp -= incoming;
+            log(`${enemy.name} 反擊，你受到 ${incoming} 傷害。`, 'danger');
+        }
+        
+        updateUI();
+        if (player.currentHp <= 0) gameOver();
+    }
+
+    function usePotion() {
+        if (player.potions > 0) {
+            player.potions--;
+            const heal = 50;
+            const stats = getPlayerStats();
+            player.currentHp = Math.min(stats.hp, player.currentHp + heal);
+            log(`使用了藥水，回復 ${heal} HP。`, 'success');
+            
+            // 怪物趁機攻擊
+            let incoming = Math.floor(enemy.atk * 0.8);
+            player.currentHp -= incoming;
+            log(`${enemy.name} 趁機攻擊，造成 ${incoming} 傷害。`);
+            
+            updateUI();
+            if (player.currentHp <= 0) gameOver();
+        }
+    }
+
+    function winReward() {
+        if (Math.random() < 0.5) {
+             generateLoot();
+        } else {
+            log("怪物掉落了一些金幣。");
+            renderNextButton();
+        }
+    }
+
+    function triggerEvent() {
+        const evts = [
+            { t: "發現寶箱", act: () => { log("打開寶箱，發現裝備！", 'highlight'); generateLoot(); } },
+            { t: "遇到商人", act: () => { 
+                log("商人送了你一瓶藥水。"); 
+                player.potions++; 
+                renderNextButton(); 
+            }},
+            { t: "神秘泉水", act: () => { 
+                log("喝下泉水，傷勢完全恢復。"); 
+                player.currentHp = getPlayerStats().hp; 
+                renderNextButton(); 
+            }},
+            { t: "小錢袋", act: () => {
+                let g = 50;
+                log(`撿到錢袋，獲得 ${g} 金幣。`, 'success');
+                player.gold += g;
+                renderNextButton();
+            }}
+        ];
+        const evt = evts[Math.floor(Math.random() * evts.length)];
+        log(`事件: ${evt.t}`);
+        evt.act();
+        updateUI();
+    }
+
+    function generateLoot() {
+        const slot = SLOTS[Math.floor(Math.random() * SLOTS.length)];
+        // 這裡簡化資料庫存取，隨機取一個該部位的裝備
+        // 為了完整性，若資料庫該部位沒有符合職業的裝備，就給通用裝備
+        let candidates = ITEM_DB[slot].filter(item => item.allowed === null || item.allowed.includes(player.classKey));
+        if (candidates.length === 0) candidates = ITEM_DB[slot].filter(item => item.allowed === null);
+
+        if (candidates.length === 0) {
+            renderNextButton(); return;
+        }
+
+        const baseItem = candidates[Math.floor(Math.random() * candidates.length)];
+        let newItem = JSON.parse(JSON.stringify(baseItem));
+        newItem.slot = slot;
+        
+        const multiplier = 1 + (floor * 0.15);
+        for (let key in newItem.stats) {
+            if (newItem.stats[key] > 0) newItem.stats[key] = Math.ceil(newItem.stats[key] * multiplier * (0.8 + Math.random() * 0.4));
+        }
+
+        if (Math.random() < 0.2) {
+            newItem.name = "精良的 " + newItem.name;
+            newItem.stats.atk = (newItem.stats.atk || 0) + Math.ceil(floor/2);
+        }
+
+        tempLoot = newItem;
+        showLootModal(newItem);
+    }
+
+    function showLootModal(newItem) {
+        const modal = document.getElementById('modal-loot');
+        const currentItem = player.equipment[newItem.slot];
+
+        let curHtml = currentItem ? `<strong>${currentItem.name}</strong><br>` : "無<br>";
+        if (currentItem) for (let k in currentItem.stats) curHtml += `${k.toUpperCase()}: ${currentItem.stats[k]}<br>`;
+        document.getElementById('loot-current').innerHTML = curHtml;
+
+        let newHtml = `<strong>${newItem.name}</strong><br>`;
+        for (let k in newItem.stats) {
+            let diff = newItem.stats[k] - (currentItem && currentItem.stats[k] ? currentItem.stats[k] : 0);
+            let colorClass = diff > 0 ? 'stat-diff-pos' : (diff < 0 ? 'stat-diff-neg' : '');
+            newHtml += `${k.toUpperCase()}: ${newItem.stats[k]} <span class="${colorClass}">(${diff>0?'+':''}${diff})</span><br>`;
+        }
+        document.getElementById('loot-new').innerHTML = newHtml;
+
+        modal.style.display = 'flex';
+    }
+
+    function confirmLoot(accept) {
+        document.getElementById('modal-loot').style.display = 'none';
+        if (accept && tempLoot) {
+            equip(tempLoot, tempLoot.slot);
+        }
+        tempLoot = null;
+        renderNextButton();
+    }
+
+    function equip(item, slot, silent=false) {
+        player.equipment[slot] = item;
+        updateUI();
+        if (!silent) log(`裝備了 <span class="highlight">${item.name}</span>！`, 'success');
+    }
+
+    function renderNextButton() {
+        const area = document.getElementById('action-area');
+        area.innerHTML = '';
+        const btn = document.createElement('button');
+        btn.innerText = '前往下一層';
+        btn.onclick = nextFloor;
+        area.appendChild(btn);
+    }
+
+    function gameOver() {
+        checkAchievement('death');
+        document.getElementById('screen-game').classList.remove('active');
+        document.getElementById('screen-over').classList.add('active');
+        document.getElementById('final-floor').innerText = floor;
+    }
+</script>
+</body>
+</html>

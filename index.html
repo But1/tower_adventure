@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無盡試煉之塔 v3.4 - 修正版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>無盡試煉之塔 v3.5 - 介面優化版</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -17,6 +17,8 @@
             --card-hover: #2c2c2c;
         }
 
+        * { box-sizing: border-box; } /* 確保寬度計算包含邊框 */
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
@@ -27,22 +29,24 @@
             align-items: center;
             min-height: 100vh;
             user-select: none;
+            padding: 10px; /* 手機版邊緣留白 */
         }
 
         .game-container {
             width: 100%;
             max-width: 900px;
             background-color: var(--panel-bg);
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0 25px rgba(0,0,0,0.9);
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px;
             position: relative;
-            max-height: 98vh;
-            overflow-y: auto;
+            /* 讓容器本身不要超過視窗太誇張，但內容可捲動 */
+            max-height: 98vh; 
+            overflow-y: auto; 
         }
 
         h1, h2, h3 { text-align: center; margin: 5px 0; color: var(--accent-color); }
@@ -52,42 +56,76 @@
         .success { color: var(--success-color); }
         .desc-text { color: #aaa; font-size: 0.85rem; }
 
-        /* UI Components */
-        .class-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 10px; }
-        .class-card { background: #252525; border: 1px solid #444; border-radius: 8px; padding: 15px; cursor: pointer; transition: all 0.2s; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+        /* --- UI: 職業選擇 --- */
+        .class-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
+        .class-card { background: #252525; border: 1px solid #444; border-radius: 8px; padding: 10px; cursor: pointer; transition: all 0.2s; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
         .class-card:hover { background: var(--card-hover); border-color: var(--accent-color); transform: translateY(-3px); }
-        .class-icon { font-size: 2.5rem; margin-bottom: 5px; }
-        .class-name { font-weight: bold; font-size: 1.1rem; color: #fff; margin-bottom: 5px; }
-        .class-role { color: var(--accent-color); font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
-        .class-stats { font-size: 0.8rem; color: #bbb; text-align: left; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; margin-top: auto;}
+        .class-icon { font-size: 2rem; margin-bottom: 5px; }
+        .class-name { font-weight: bold; font-size: 1rem; color: #fff; margin-bottom: 5px; }
+        .class-role { color: var(--accent-color); font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
+        .class-stats { font-size: 0.75rem; color: #bbb; text-align: left; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; margin-top: auto;}
         
-        .top-panel { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: #252525; padding: 10px; border-radius: 5px; font-size: 0.9rem; text-align: center; }
+        /* --- UI: 頂部狀態列 --- */
+        .top-panel { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; background: #252525; padding: 8px; border-radius: 5px; font-size: 0.85rem; text-align: center; align-items: center;}
         
-        #buff-bar { display: flex; gap: 10px; justify-content: center; font-size: 0.8rem; height: 20px; }
-        .buff-tag { background: #333; padding: 2px 8px; border-radius: 10px; color: #fff; border: 1px solid #555; display: none; }
+        #buff-bar { display: flex; gap: 5px; justify-content: center; font-size: 0.75rem; height: 20px; margin-bottom: 5px;}
+        .buff-tag { background: #333; padding: 2px 6px; border-radius: 10px; color: #fff; border: 1px solid #555; display: none; }
         .buff-tag.active { display: inline-block; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        .main-content { display: flex; gap: 10px; height: 350px; }
-        .game-log { flex: 2; background: #000; padding: 10px; border: 1px solid #444; border-radius: 5px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.9rem; line-height: 1.4; }
+        /* --- UI: 中間主要內容區 (關鍵修改) --- */
+        .main-content { 
+            display: flex; 
+            gap: 10px; 
+            height: 360px; /* 電腦版固定高度 */
+        }
+
+        .game-log { 
+            flex: 2; /* 佔據 2/3 寬度 */
+            background: #000; 
+            padding: 10px; 
+            border: 1px solid #444; 
+            border-radius: 5px; 
+            overflow-y: auto; /* 垂直卷軸 */
+            font-family: 'Courier New', monospace; 
+            font-size: 0.9rem; 
+            line-height: 1.5; 
+            height: 100%; /* 填滿父容器高度 */
+        }
+        
         .log-entry { margin-bottom: 4px; border-bottom: 1px solid #1a1a1a; padding-bottom: 2px;}
 
-        .equipment-grid { flex: 1; display: grid; grid-template-columns: 1fr; gap: 5px; background: #2a2a2a; padding: 5px; border-radius: 5px; font-size: 0.8rem; overflow-y: auto; }
-        .equip-slot { background: #333; padding: 8px; border-radius: 4px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
+        .equipment-grid { 
+            flex: 1; /* 佔據 1/3 寬度 */
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 5px; 
+            background: #2a2a2a; 
+            padding: 5px; 
+            border-radius: 5px; 
+            font-size: 0.8rem; 
+            overflow-y: auto;
+            height: 100%; /* 填滿父容器高度 */
+        }
+        
+        .equip-slot { background: #333; padding: 6px; border-radius: 4px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
         .equip-slot span.label { color: #888; font-size: 0.7rem; }
-        .equip-slot span.item-name { color: var(--accent-color); font-weight: bold; }
+        .equip-slot span.item-name { color: var(--accent-color); font-weight: bold; font-size: 0.8rem; }
 
-        #enemy-panel { display: none; background: linear-gradient(to bottom, #3a1111, #220a0a); padding: 15px; border-radius: 8px; border: 2px solid var(--danger-color); text-align: center; margin-bottom: 10px; animation: shake 0.5s; }
+        /* --- UI: 敵人面板 --- */
+        #enemy-panel { display: none; background: linear-gradient(to bottom, #3a1111, #220a0a); padding: 10px; border-radius: 8px; border: 2px solid var(--danger-color); text-align: center; margin-bottom: 10px; animation: shake 0.5s; }
         #enemy-panel.active { display: block; }
-        .enemy-icon-display { font-size: 4rem; display: block; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--danger-color)); }
-        .enemy-info { font-size: 1.2rem; font-weight: bold; color: var(--danger-color); margin-bottom: 5px;}
-        .enemy-hp-bar { width: 100%; height: 12px; background: #444; border-radius: 6px; overflow: hidden; border: 1px solid #555; }
+        .enemy-icon-display { font-size: 3.5rem; display: block; margin-bottom: 5px; filter: drop-shadow(0 0 10px var(--danger-color)); }
+        .enemy-info { font-size: 1.1rem; font-weight: bold; color: var(--danger-color); margin-bottom: 5px;}
+        .enemy-hp-bar { width: 100%; height: 10px; background: #444; border-radius: 5px; overflow: hidden; border: 1px solid #555; }
         .enemy-hp-fill { height: 100%; background: var(--danger-color); width: 100%; transition: width 0.3s ease-out; }
         @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
 
-        .controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 50px; }
-        button { background-color: #3a3a3a; color: white; border: 1px solid #555; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: 0.2s; flex: 1; }
+        /* --- UI: 按鈕區 --- */
+        .controls { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 40px; margin-top: auto; }
+        button { background-color: #3a3a3a; color: white; border: 1px solid #555; padding: 12px 10px; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: 0.2s; flex: 1; min-width: 100px; touch-action: manipulation; }
         button:hover { background-color: #505050; border-color: #999; }
+        button:active { transform: translateY(2px); }
         button:disabled { opacity: 0.3; cursor: not-allowed; }
         .btn-atk { background: #6a1b1b; }
         .btn-heal { background: #1b6a1b; }
@@ -95,32 +133,67 @@
 
         /* Modal & Notifications */
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 100; }
-        .modal-content { background: #222; border: 2px solid var(--accent-color); padding: 20px; width: 90%; max-width: 600px; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
+        .modal-content { background: #222; border: 2px solid var(--accent-color); padding: 15px; width: 95%; max-width: 500px; border-radius: 10px; max-height: 85vh; overflow-y: auto; }
         .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
         .compare-card { background: #333; padding: 10px; border-radius: 5px; }
         .stat-diff-pos { color: var(--success-color); }
         .stat-diff-neg { color: var(--danger-color); }
-        .achieve-grid { display: grid; grid-template-columns: 1fr; gap: 10px; text-align: left; }
-        .achieve-item { background: #333; padding: 10px; border-radius: 5px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; opacity: 0.5; filter: grayscale(1); }
+        .achieve-grid { display: grid; grid-template-columns: 1fr; gap: 8px; text-align: left; }
+        .achieve-item { background: #333; padding: 8px; border-radius: 5px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; opacity: 0.5; filter: grayscale(1); }
         .achieve-item.unlocked { opacity: 1; filter: grayscale(0); border-color: var(--accent-color); background: #2a2200; }
-        #notification-area { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 300px; pointer-events: none; z-index: 200; }
-        .toast { background: rgba(0, 0, 0, 0.95); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 15px; margin-bottom: 10px; border-radius: 5px; text-align: center; animation: slideDown 0.5s ease-out, fadeOut 0.5s ease-in 2.5s forwards; box-shadow: 0 0 10px var(--accent-color); }
+        #notification-area { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 300px; pointer-events: none; z-index: 200; }
+        .toast { background: rgba(0, 0, 0, 0.95); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 10px; margin-bottom: 10px; border-radius: 5px; text-align: center; animation: slideDown 0.5s ease-out, fadeOut 0.5s ease-in 2.5s forwards; box-shadow: 0 0 10px var(--accent-color); }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 
         /* Potion & Shop UI */
-        .potion-list, .shop-list { display: flex; flex-direction: column; gap: 10px; }
-        .potion-row, .shop-row { background: #333; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; }
-        .potion-info { display: flex; gap: 15px; align-items: center; }
-        .potion-icon { font-size: 2rem; }
-        .potion-desc { color: #aaa; font-size: 0.8rem; }
-        .btn-use { background: var(--success-color); color: #000; font-weight: bold; width: auto; padding: 5px 15px; flex: none; }
-        .btn-buy { background: var(--accent-color); color: #000; font-weight: bold; width: auto; padding: 5px 15px; flex: none; }
-        .shop-price { color: var(--accent-color); font-weight: bold; margin-right: 10px; }
+        .potion-list, .shop-list { display: flex; flex-direction: column; gap: 8px; }
+        .potion-row, .shop-row { background: #333; padding: 8px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; }
+        .potion-info { display: flex; gap: 10px; align-items: center; }
+        .potion-icon { font-size: 1.8rem; }
+        .potion-desc { color: #aaa; font-size: 0.75rem; }
+        .btn-use, .btn-buy { background: var(--success-color); color: #000; font-weight: bold; width: auto; padding: 6px 12px; flex: none; font-size: 0.9rem; min-width: 60px;}
+        .btn-buy { background: var(--accent-color); }
+        .shop-price { color: var(--accent-color); font-weight: bold; margin-right: 8px; font-size: 0.9rem;}
 
         .screen { display: none; }
         .active { display: block; }
-        @media (max-width: 700px) { .class-grid { grid-template-columns: 1fr 1fr; } .main-content { flex-direction: column-reverse; height: auto; } .game-log { height: 200px; } }
+
+        /* --- 手機版專屬優化 (Mobile Responsive) --- */
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 10px;
+                max-height: 100vh;
+                border: none;
+                border-radius: 0;
+            }
+            
+            .top-panel {
+                font-size: 0.75rem; /* 字體縮小 */
+                grid-template-columns: repeat(5, 1fr);
+            }
+
+            .main-content {
+                flex-direction: column; /* 改為垂直排列 */
+                height: auto; /* 高度自動，由內容決定 */
+            }
+
+            .equipment-grid {
+                height: 150px; /* 手機版裝備欄固定高度 */
+                order: 1; /* 裝備欄在上方 (或下方，看你喜好，目前設為上方) */
+                flex: none;
+            }
+
+            .game-log {
+                height: 220px; /* 手機版文字區固定高度 (約10行) */
+                order: 2; /* 文字區在下方 */
+                flex: none; /* 不要伸縮 */
+            }
+
+            .controls button {
+                padding: 15px; /* 按鈕加大好按 */
+            }
+        }
     </style>
 </head>
 <body>
@@ -128,17 +201,17 @@
 <div class="game-container">
     <div id="notification-area"></div>
 
-    <h1>🏰 無盡試煉 v3.4 修正版</h1>
+    <h1>🏰 無盡試煉 v3.5</h1>
 
     <div id="screen-start" class="screen active">
         <h3>請選擇你的英雄</h3>
         <p style="text-align:center; color:#888; font-size:0.9rem; margin-bottom: 20px;">每個職業都有獨特的屬性與初始裝備</p>
         <div class="class-grid">
-            <div class="class-card" onclick="startGame('barbarian')"><div class="class-icon">🪓</div><div class="class-name">野蠻人</div><div class="class-role">狂戰士</div><p class="desc-text">體質強健，攻擊力不俗。依靠高血量和強力重擊碾壓敵人。</p><div class="class-stats">❤️ 生命: <span class="success">極高</span><br>⚔️ 攻擊: <span class="highlight">高</span><br>🛡️ 防禦: <span class="danger">低</span></div></div>
-            <div class="class-card" onclick="startGame('assassin')"><div class="class-icon">🗡️</div><div class="class-name">刺客</div><div class="class-role">爆擊流</div><p class="desc-text">身板脆弱，但擁有極高的爆擊率。運氣好時能瞬間秒殺強敵。</p><div class="class-stats">❤️ 生命: <span class="danger">低</span><br>⚔️ 攻擊: <span class="success">中</span><br>⚡ 爆擊: <span class="highlight">極高</span></div></div>
-            <div class="class-card" onclick="startGame('mage')"><div class="class-icon">🔥</div><div class="class-name">法師</div><div class="class-role">玻璃大砲</div><p class="desc-text">擁有毀滅性的攻擊力，但防禦極低。必須在敵人靠近前將其消滅。</p><div class="class-stats">❤️ 生命: <span class="danger">極低</span><br>⚔️ 攻擊: <span class="highlight">極高</span><br>🛡️ 防禦: <span class="danger">無</span></div></div>
-            <div class="class-card" onclick="startGame('warlock')"><div class="class-icon">🔮</div><div class="class-name">術士</div><div class="class-role">吸血續航</div><p class="desc-text">數值平衡，攻擊時會吸取敵人生命。生存能力極強。</p><div class="class-stats">❤️ 生命: <span class="success">中</span><br>⚔️ 攻擊: <span class="success">中</span><br>🩸 特效: <span class="highlight">攻擊吸血</span></div></div>
-            <div class="class-card" onclick="startGame('knight')"><div class="class-icon">🛡️</div><div class="class-name">騎士</div><div class="class-role">鐵壁防禦</div><p class="desc-text">高防禦力與盾牌格擋，能大幅減輕傷害。最為穩健。</p><div class="class-stats">❤️ 生命: <span class="success">高</span><br>⚔️ 攻擊: <span class="danger">低</span><br>🛡️ 防禦: <span class="highlight">極高</span></div></div>
+            <div class="class-card" onclick="startGame('barbarian')"><div class="class-icon">🪓</div><div class="class-name">野蠻人</div><div class="class-role">狂戰士</div><div class="class-stats">❤️ 極高 ⚔️ 高</div></div>
+            <div class="class-card" onclick="startGame('assassin')"><div class="class-icon">🗡️</div><div class="class-name">刺客</div><div class="class-role">爆擊流</div><div class="class-stats">⚡ 爆擊極高</div></div>
+            <div class="class-card" onclick="startGame('mage')"><div class="class-icon">🔥</div><div class="class-name">法師</div><div class="class-role">玻璃大砲</div><div class="class-stats">⚔️ 極高 ❤️ 低</div></div>
+            <div class="class-card" onclick="startGame('warlock')"><div class="class-icon">🔮</div><div class="class-name">術士</div><div class="class-role">吸血續航</div><div class="class-stats">🩸 攻擊吸血</div></div>
+            <div class="class-card" onclick="startGame('knight')"><div class="class-icon">🛡️</div><div class="class-name">騎士</div><div class="class-role">鐵壁防禦</div><div class="class-stats">🛡️ 防禦極高</div></div>
         </div>
         <div class="controls"><button class="btn-achievement" onclick="showAchievements()">🏆 查看成就列表</button></div>
     </div>
@@ -152,8 +225,8 @@
             <div class="highlight" style="color:#ffd700;">💰 <span id="ui-gold">0</span></div>
         </div>
         <div id="buff-bar">
-            <span id="buff-atk" class="buff-tag">⚔️ 攻擊強化</span>
-            <span id="buff-def" class="buff-tag">🛡️ 防禦強化</span>
+            <span id="buff-atk" class="buff-tag">⚔️ 攻+</span>
+            <span id="buff-def" class="buff-tag">🛡️ 防+</span>
         </div>
 
         <div id="enemy-panel">
@@ -183,21 +256,10 @@
 <div id="modal-loot" class="modal-overlay"><div class="modal-content"><h3>🎁 獲得戰利品!</h3><div class="compare-grid"><div class="compare-card" style="opacity: 0.7;"><h4>目前裝備</h4><div id="loot-current">無</div></div><div class="compare-card" style="border: 1px solid var(--accent-color);"><h4 class="highlight">新裝備</h4><div id="loot-new"></div></div></div><div class="controls"><button class="btn-heal" onclick="confirmLoot(true)">裝備</button><button class="btn-atk" onclick="confirmLoot(false)">丟棄</button></div></div></div>
 <div id="modal-achievements" class="modal-overlay" onclick="if(event.target === this) this.style.display='none'"><div class="modal-content"><h3>🏆 成就紀錄</h3><p style="text-align:center; font-size:0.8rem; color:#888;">成就進度會自動儲存在此瀏覽器中</p><div id="achievement-list" class="achieve-grid"></div><div class="controls" style="margin-top:20px;"><button onclick="document.getElementById('modal-achievements').style.display='none'">關閉</button><button class="btn-atk" onclick="resetAchievements()">重置成就</button></div></div></div>
 <div id="modal-potions" class="modal-overlay" onclick="if(event.target === this) this.style.display='none'"><div class="modal-content"><h3>🎒 藥水背包</h3><div id="potion-list" class="potion-list"></div><div class="controls" style="margin-top:20px;"><button onclick="document.getElementById('modal-potions').style.display='none'">關閉</button></div></div></div>
-
-<div id="modal-merchant" class="modal-overlay">
-    <div class="modal-content">
-        <h3>🐫 旅行商人</h3>
-        <p style="text-align:center; color:#aaa;">「只要有金幣，什麼都好談...」</p>
-        <div style="text-align:center; margin-bottom:10px;" class="highlight">持有金幣: <span id="merchant-gold"></span></div>
-        <div id="shop-list" class="shop-list"></div>
-        <div class="controls" style="margin-top:20px;">
-            <button onclick="leaveMerchant()">離開商店</button>
-        </div>
-    </div>
-</div>
+<div id="modal-merchant" class="modal-overlay"><div class="modal-content"><h3>🐫 旅行商人</h3><p style="text-align:center; color:#aaa;">「只要有金幣，什麼都好談...」</p><div style="text-align:center; margin-bottom:10px;" class="highlight">持有金幣: <span id="merchant-gold"></span></div><div id="shop-list" class="shop-list"></div><div class="controls" style="margin-top:20px;"><button onclick="leaveMerchant()">離開商店</button></div></div></div>
 
 <script>
-    /* --- 常數資料 --- */
+    /* --- 常數與資料 --- */
     const CLASSES = { barbarian: { name: "野蠻人", hp: 130, atk: 12, def: 2 }, assassin: { name: "刺客", hp: 80, atk: 15, def: 1 }, mage: { name: "法師", hp: 60, atk: 22, def: 0 }, warlock: { name: "術士", hp: 90, atk: 12, def: 1 }, knight: { name: "騎士", hp: 110, atk: 9, def: 6 } };
     const SLOTS = ['mainHand', 'offHand', 'chest', 'helm', 'boots', 'ring', 'necklace'];
     const SLOT_NAMES = { mainHand: "主手", offHand: "副手", chest: "胸甲", helm: "頭盔", boots: "鞋子", ring: "戒指", necklace: "項鍊" };
@@ -212,7 +274,7 @@
     let tempLoot = null;
     let enemy = null;
     let unlockedAchievements = [];
-    let merchantItems = []; // 暫存商人商品
+    let merchantItems = [];
 
     window.onload = function() { loadAchievements(); };
 
@@ -314,7 +376,7 @@
     function renderCombatControls() { 
         const area = document.getElementById('action-area'); area.innerHTML = ''; 
         const atkBtn = document.createElement('button'); atkBtn.className = 'btn-atk'; atkBtn.innerText = '⚔️ 攻擊'; atkBtn.onclick = combatRound; area.appendChild(atkBtn); 
-        const potBtn = document.createElement('button'); potBtn.className = 'btn-heal'; potBtn.innerText = `🎒 藥水背包`; potBtn.onclick = openPotionModal; area.appendChild(potBtn); 
+        const potBtn = document.createElement('button'); potBtn.className = 'btn-heal'; potBtn.innerText = `🎒 藥水`; potBtn.onclick = openPotionModal; area.appendChild(potBtn); 
     }
 
     function combatRound() {
@@ -351,7 +413,7 @@
 
     function winReward() { if (Math.random() < 0.5) generateLoot(); else { log("怪物掉落了一些金幣。"); renderNextButton(); } }
 
-    /* --- 事件系統 (新) --- */
+    /* --- 事件系統 --- */
     function triggerEvent() { 
         const roll = Math.random();
         if (roll < 0.25) triggerMerchant();
@@ -364,7 +426,6 @@
         updateUI(); 
     }
 
-    // 1. 旅行商人
     function triggerMerchant() {
         log("🐫 遠方來了一位旅行商人...");
         merchantItems = [];
@@ -415,7 +476,6 @@
     
     function leaveMerchant() { document.getElementById('modal-merchant').style.display = 'none'; log("你告別了商人，繼續前行。"); renderNextButton(); }
 
-    // 2. 神秘神壇
     function triggerShrine() {
         log("⛩️ 發現一座古老的神壇...", 'highlight');
         const outcome = Math.random();
@@ -432,7 +492,6 @@
         updateUI(); if (player.currentHp <= 0) gameOver(); else renderNextButton();
     }
 
-    // 3. 寶箱 (修正引號錯誤)
     function triggerChest() {
         log("📦 發現一個寶箱！", 'highlight');
         const roll = Math.random();
@@ -453,7 +512,6 @@
         }
     }
 
-    // 4. 流浪者
     function triggerWanderer() {
         log("👤 遇到一位衣衫襤褸的流浪者...");
         log("「年輕人，這塔裡充滿了危險，拿著這個吧。」");
@@ -474,7 +532,6 @@
         return newItem;
     }
 
-    // 裝備與結算部分
     function generateLoot() { const item = generateRandomEquip(); if(!item) {renderNextButton(); return;} tempLoot = item; showLootModal(item); }
     function showLootModal(newItem) { const modal = document.getElementById('modal-loot'); const currentItem = player.equipment[newItem.slot]; let curHtml = currentItem ? `<strong>${currentItem.name}</strong><br>` : "無<br>"; if (currentItem) for (let k in currentItem.stats) curHtml += `${k.toUpperCase()}: ${currentItem.stats[k]}<br>`; document.getElementById('loot-current').innerHTML = curHtml; let newHtml = `<strong>${newItem.name}</strong><br>`; for (let k in newItem.stats) { let diff = newItem.stats[k] - (currentItem && currentItem.stats[k] ? currentItem.stats[k] : 0); let colorClass = diff > 0 ? 'stat-diff-pos' : (diff < 0 ? 'stat-diff-neg' : ''); newHtml += `${k.toUpperCase()}: ${newItem.stats[k]} <span class="${colorClass}">(${diff>0?'+':''}${diff})</span><br>`; } document.getElementById('loot-new').innerHTML = newHtml; modal.style.display = 'flex'; }
     function confirmLoot(accept) { document.getElementById('modal-loot').style.display = 'none'; if (accept && tempLoot) equip(tempLoot, tempLoot.slot); tempLoot = null; renderNextButton(); }
@@ -482,7 +539,6 @@
     function renderNextButton() { const area = document.getElementById('action-area'); area.innerHTML = ''; const btn = document.createElement('button'); btn.innerText = '👣 前往下一層'; btn.onclick = nextFloor; area.appendChild(btn); }
     function gameOver() { checkAchievement('death'); document.getElementById('screen-game').classList.remove('active'); document.getElementById('screen-over').classList.add('active'); document.getElementById('final-floor').innerText = floor; }
 
-    /* --- 藥水背包邏輯 --- */
     function openPotionModal() {
         const list = document.getElementById('potion-list'); list.innerHTML = ''; let hasPotion = false;
         for (let key in player.inventory) {

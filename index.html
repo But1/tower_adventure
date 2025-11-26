@@ -155,4 +155,472 @@
 
         /* --- 手機版專屬優化 --- */
         @media (max-width: 768px) {
-            .game-container { padding: 10px; max-height: 100vh; border: none; border-radius:
+            .game-container { padding: 10px; max-height: 100vh; border: none; border-radius: 0; }
+            .top-panel { font-size: 0.75rem; grid-template-columns: repeat(5, 1fr); gap: 1px;}
+            
+            /* 手機版中間區域重新排列 */
+            .main-content { flex-direction: column; height: auto; flex: 1; overflow: hidden; }
+            .equipment-grid { height: 120px; order: 1; flex: none; }
+            .game-log { flex: 1; min-height: 150px; order: 2; }
+            
+            .controls button { padding: 15px; font-size: 1.1rem; } /* 更好按的按鈕 */
+
+            /* 商店列表手機版優化：改為垂直堆疊，避免擠壓 */
+            .shop-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .shop-info { width: 100%; }
+            .action-group { width: 100%; justify-content: flex-end; border-top: 1px solid #444; padding-top: 8px; margin-top: 5px; }
+            .modal-content { max-height: 90vh; width: 98%; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div id="notification-area"></div>
+
+    <h1>🏰 無盡試煉 v4.1</h1>
+
+    <div id="screen-start" class="screen active">
+        <h3>請選擇你的英雄</h3>
+        <div class="class-grid">
+            <div class="class-card" onclick="startGame('barbarian')"><div class="class-icon">🪓</div><div class="class-name">野蠻人</div><div class="class-role">狂戰士</div><div class="class-stats">❤️ 極高 ⚔️ 高</div></div>
+            <div class="class-card" onclick="startGame('assassin')"><div class="class-icon">🗡️</div><div class="class-name">刺客</div><div class="class-role">爆擊流</div><div class="class-stats">⚡ 爆擊極高</div></div>
+            <div class="class-card" onclick="startGame('mage')"><div class="class-icon">🔥</div><div class="class-name">法師</div><div class="class-role">玻璃大砲</div><div class="class-stats">⚔️ 極高 ❤️ 低</div></div>
+            <div class="class-card" onclick="startGame('warlock')"><div class="class-icon">🔮</div><div class="class-name">術士</div><div class="class-role">吸血續航</div><div class="class-stats">🩸 攻擊吸血</div></div>
+            <div class="class-card" onclick="startGame('knight')"><div class="class-icon">🛡️</div><div class="class-name">騎士</div><div class="class-role">鐵壁防禦</div><div class="class-stats">🛡️ 防禦極高</div></div>
+        </div>
+        <div class="controls"><button class="btn-achievement" onclick="showAchievements()">🏆 查看成就列表</button></div>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div class="top-panel">
+            <div><span id="ui-class"></span> Lv.<span id="ui-floor">1</span></div>
+            <div class="danger">HP <span id="ui-hp"></span>/<span id="ui-maxhp"></span></div>
+            <div class="highlight">ATK <span id="ui-atk"></span></div>
+            <div class="success">DEF <span id="ui-def"></span></div>
+            <div class="highlight" style="color:#ffd700;">💰 <span id="ui-gold">0</span></div>
+        </div>
+        <div id="buff-bar">
+            <span id="buff-atk" class="buff-tag">⚔️ 攻+</span>
+            <span id="buff-def" class="buff-tag">🛡️ 防+</span>
+        </div>
+
+        <div id="enemy-panel">
+            <span class="enemy-icon-display" id="enemy-icon-display"></span>
+            <div class="enemy-info"><span id="enemy-name-display"></span> <span style="font-size:0.9rem;">(HP: <span id="enemy-hp-current"></span>/<span id="enemy-hp-max"></span>)</span></div>
+            <div class="enemy-hp-bar"><div class="enemy-hp-fill" id="enemy-hp-fill"></div></div>
+        </div>
+
+        <div class="main-content">
+            <div class="equipment-grid" id="equip-display"></div>
+            <div id="game-log" class="game-log"></div>
+        </div>
+
+        <div class="controls" id="action-area"></div>
+    </div>
+
+    <div id="screen-over" class="screen" style="text-align:center;">
+        <h2 class="danger">💀 挑戰失敗 💀</h2>
+        <p>最終層數: <span id="final-floor" class="highlight"></span></p>
+        <div class="controls">
+            <button onclick="location.reload()">重新開始</button>
+            <button class="btn-achievement" onclick="showAchievements()">🏆 查看成就</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-loot" class="modal-overlay"><div class="modal-content"><h3>🎁 獲得戰利品!</h3><div class="compare-grid"><div class="compare-card" style="opacity: 0.7;"><h4>目前裝備</h4><div id="loot-current">無</div></div><div class="compare-card" style="border: 1px solid var(--accent-color);"><h4 class="highlight">新裝備</h4><div id="loot-new"></div></div></div><div class="controls"><button class="btn-heal" onclick="confirmLoot(true)">裝備</button><button class="btn-atk" onclick="confirmLoot(false)">丟棄</button></div></div></div>
+<div id="modal-achievements" class="modal-overlay" onclick="if(event.target === this) this.style.display='none'"><div class="modal-content"><h3>🏆 成就紀錄</h3><p style="text-align:center; font-size:0.8rem; color:#888;">成就進度會自動儲存在此瀏覽器中</p><div id="achievement-list" class="achieve-grid"></div><div class="controls" style="margin-top:20px;"><button onclick="document.getElementById('modal-achievements').style.display='none'">關閉</button><button class="btn-atk" onclick="resetAchievements()">重置成就</button></div></div></div>
+<div id="modal-potions" class="modal-overlay" onclick="if(event.target === this) this.style.display='none'"><div class="modal-content"><h3>🎒 藥水背包</h3><div id="potion-list" class="potion-list"></div><div class="controls" style="margin-top:20px;"><button onclick="document.getElementById('modal-potions').style.display='none'">關閉</button></div></div></div>
+<div id="modal-merchant" class="modal-overlay"><div class="modal-content"><h3>🐫 旅行商人</h3><p style="text-align:center; color:#aaa;">「只要有金幣，什麼都好談...」</p><div style="text-align:center; margin-bottom:10px;" class="highlight">持有金幣: <span id="merchant-gold"></span></div><div id="shop-list" class="shop-list"></div><div class="controls" style="margin-top:20px;"><button onclick="leaveMerchant()">離開商店</button></div></div></div>
+
+<script>
+    /* --- 常數與資料 --- */
+    const CLASSES = { barbarian: { name: "野蠻人", hp: 130, atk: 12, def: 2 }, assassin: { name: "刺客", hp: 80, atk: 15, def: 1 }, mage: { name: "法師", hp: 60, atk: 22, def: 0 }, warlock: { name: "術士", hp: 90, atk: 12, def: 1 }, knight: { name: "騎士", hp: 110, atk: 9, def: 6 } };
+    const SLOTS = ['mainHand', 'offHand', 'chest', 'helm', 'boots', 'ring', 'necklace'];
+    const SLOT_NAMES = { mainHand: "主手", offHand: "副手", chest: "胸甲", helm: "頭盔", boots: "鞋子", ring: "戒指", necklace: "項鍊" };
+    const ACHIEVEMENTS = [
+        { id: 'first_step', title: '初出茅廬', desc: '開始第一次遊戲' }, 
+        { id: 'floor_10', title: '探險家', desc: '到達第 10 層' }, 
+        { id: 'floor_20', title: '中途點', desc: '到達第 20 層' }, 
+        { id: 'floor_30', title: '深淵行者', desc: '到達第 30 層' }, 
+        { id: 'floor_50', title: '傳奇英雄', desc: '到達第 50 層' },
+        { id: 'boss_killer', title: '弒君者', desc: '擊敗第 10 層的首領' },
+        { id: 'high_dmg', title: '一擊必殺', desc: '單次攻擊造成超過 80 點傷害' }, 
+        { id: 'glass_cannon', title: '破壞神', desc: '攻擊力超過 50' },
+        { id: 'iron_wall', title: '銅牆鐵壁', desc: '防禦力超過 25' }, 
+        { id: 'full_gear', title: '全副武裝', desc: '所有裝備欄位都穿上裝備' }, 
+        { id: 'rich', title: '財富自由', desc: '持有金幣超過 500' }, 
+        { id: 'shopaholic', title: '購物狂', desc: '在商人處花費超過 500 金幣' },
+        { id: 'hoarder', title: '藥罐子', desc: '同時持有 10 瓶藥水' }, 
+        { id: 'lucky', title: '幸運一擊', desc: '觸發一次爆擊' }, 
+        { id: 'lucky_looter', title: '精良收藏', desc: '裝備一件「精良」裝備' },
+        { id: 'untouchable', title: '毫髮無傷', desc: '受到攻擊但傷害為 0' }, 
+        { id: 'close_call', title: '九死一生', desc: '戰鬥勝利時 HP 低於 10' },
+        { id: 'death', title: '勇者長眠', desc: '第一次死亡' }
+    ];
+    const ITEM_DB = { mainHand: [{ name: "生鏽鐵劍", stats: { atk: 3 }, allowed: null }, { name: "戰斧", stats: { atk: 6, spd: -1 }, allowed: ['barbarian', 'knight'] }, { name: "毒牙匕首", stats: { atk: 3, crit: 5 }, allowed: ['assassin', 'warlock'] }, { name: "老舊法杖", stats: { atk: 7 }, allowed: ['mage', 'warlock'] }, { name: "騎士長劍", stats: { atk: 5, def: 1 }, allowed: ['knight'] }, { name: "雷神之錘", stats: { atk: 9 }, allowed: ['barbarian'] }, { name: "儀式骨刀", stats: { atk: 4, hp: 10 }, allowed: ['warlock'] }, { name: "禁忌魔典", stats: { atk: 8 }, allowed: ['mage'] }, { name: "暗影之刃", stats: { atk: 6, crit: 4 }, allowed: ['assassin'] }, { name: "勇者之劍", stats: { atk: 10 }, allowed: null }], offHand: [{ name: "木盾", stats: { def: 2 }, allowed: ['knight', 'barbarian'] }, { name: "鐵圓盾", stats: { def: 4 }, allowed: ['knight'] }, { name: "水晶球", stats: { atk: 2 }, allowed: ['mage', 'warlock'] }, { name: "招架匕首", stats: { def: 1, crit: 2 }, allowed: ['assassin'] }, { name: "礦工提燈", stats: { def: 1, hp: 5 }, allowed: null }], chest: [{ name: "皮甲", stats: { def: 2 }, allowed: null }, { name: "鎖子甲", stats: { def: 5 }, allowed: ['knight', 'barbarian'] }, { name: "法師長袍", stats: { def: 1, atk: 3 }, allowed: ['mage', 'warlock'] }, { name: "重型板甲", stats: { def: 9, spd: -2 }, allowed: ['knight'] }, { name: "刺客披風", stats: { def: 2, crit: 2 }, allowed: ['assassin'] }], helm: [{ name: "頭帶", stats: { atk: 1 }, allowed: null }, { name: "十字軍頭盔", stats: { def: 4 }, allowed: ['knight'] }, { name: "獸角盔", stats: { def: 2, hp: 10 }, allowed: ['barbarian'] }, { name: "神秘兜帽", stats: { def: 1, atk: 1 }, allowed: ['mage', 'warlock'] }], boots: [{ name: "舊皮靴", stats: { def: 1 }, allowed: null }, { name: "鋼鐵戰靴", stats: { def: 3 }, allowed: ['knight'] }, { name: "輕靈之靴", stats: { atk: 1 }, allowed: ['mage', 'assassin'] }], ring: [{ name: "鐵戒指", stats: { def: 1 }, allowed: null }, { name: "紅寶石戒", stats: { atk: 2 }, allowed: null }, { name: "生命之戒", stats: { hp: 15 }, allowed: null }, { name: "幸運指環", stats: { crit: 2 }, allowed: null }], necklace: [{ name: "守護護符", stats: { def: 2 }, allowed: null }, { name: "狼牙項鍊", stats: { atk: 1, crit: 1 }, allowed: null }, { name: "藍寶石墜", stats: { atk: 3 }, allowed: null }] };
+    const MONSTER_DB = { weak: [{ icon: '💧', name: '史萊姆' }, { icon: '🐀', name: '巨大溝鼠' }, { icon: '🦇', name: '吸血蝙蝠' }, { icon: '🕷️', name: '劇毒蜘蛛' }, { icon: '🥬', name: '走路草' }], medium: [{ icon: '👺', name: '哥布林' }, { icon: '💀', name: '骷髏士兵' }, { icon: '🐺', name: '狂暴野狼' }, { icon: '🧟', name: '食屍鬼' }, { icon: '🐍', name: '大蛇' }], strong: [{ icon: '👹', name: '半獸人戰士' }, { icon: '👻', name: '詛咒幽靈' }, { icon: '🗿', name: '石像鬼' }, { icon: '🦂', name: '巨型蠍子' }, { icon: '🧛', name: '吸血鬼僕從' }], boss: [{ icon: '🐉', name: '幼龍' }, { icon: '🧙‍♂️', name: '巫妖' }, { icon: '🦍', name: '金剛' }, { icon: '🦕', name: '暴龍' }, { icon: '🦑', name: '克蘇魯之眼' }, { icon: '👿', name: '深淵惡魔' }] };
+    const POTIONS = { heal_small: { name: "小型藥水", icon: "🍷", desc: "回復 50 點生命", type: "heal", val: 50, price: 50 }, heal_large: { name: "全能藥劑", icon: "🏺", desc: "回復 100% 生命", type: "healFull", val: 0, price: 150 }, buff_atk: { name: "怪力藥丸", icon: "💪", desc: "本層攻擊 +5", type: "buff", stat: "atk", val: 5, price: 100 }, buff_def: { name: "硬化藥劑", icon: "🐢", desc: "本層防禦 +3", type: "buff", stat: "def", val: 3, price: 80 } };
+
+    /* --- 遊戲狀態 --- */
+    let player = { base: {}, currentHp: 0, gold: 0, equipment: {}, classKey: '', inventory: {}, tempBuffs: { atk: 0, def: 0 }, spentGold: 0 };
+    let floor = 0;
+    let tempLoot = null;
+    let enemy = null;
+    let unlockedAchievements = [];
+    let merchantItems = [];
+
+    window.onload = function() { loadAchievements(); };
+
+    /* --- 系統函數 --- */
+    function loadAchievements() { const stored = localStorage.getItem('tower_game_achievements'); if (stored) unlockedAchievements = JSON.parse(stored); }
+    function checkAchievement(id) { if (!unlockedAchievements.includes(id)) { unlockedAchievements.push(id); localStorage.setItem('tower_game_achievements', JSON.stringify(unlockedAchievements)); const ach = ACHIEVEMENTS.find(a => a.id === id); showToast(`🏆 成就解鎖：${ach.title}`); } }
+    function showToast(msg) { const area = document.getElementById('notification-area'); const div = document.createElement('div'); div.className = 'toast'; div.innerHTML = msg; area.appendChild(div); setTimeout(() => div.remove(), 3500); }
+    function resetAchievements() { if(confirm("確定要刪除所有成就紀錄嗎？")) { localStorage.removeItem('tower_game_achievements'); unlockedAchievements = []; showAchievements(); } }
+    function showAchievements() { const list = document.getElementById('achievement-list'); list.innerHTML = ''; ACHIEVEMENTS.forEach(ach => { const isUnlocked = unlockedAchievements.includes(ach.id); const div = document.createElement('div'); div.className = `achieve-item ${isUnlocked ? 'unlocked' : ''}`; div.innerHTML = `<div class="achieve-info"><h4>${ach.title}</h4><p>${ach.desc}</p></div><div class="achieve-status">${isUnlocked ? '✅' : '🔒'}</div>`; list.appendChild(div); }); document.getElementById('modal-achievements').style.display = 'flex'; }
+    function log(msg, type='') { const el = document.getElementById('game-log'); const div = document.createElement('div'); div.className = 'log-entry ' + type; div.innerHTML = msg; el.appendChild(div); el.scrollTop = el.scrollHeight; }
+
+    function updateUI() {
+        const stats = getPlayerStats();
+        if (player.currentHp > stats.hp) player.currentHp = stats.hp;
+        document.getElementById('ui-class').innerText = CLASSES[player.classKey].name;
+        document.getElementById('ui-floor').innerText = floor;
+        document.getElementById('ui-hp').innerText = Math.floor(player.currentHp);
+        document.getElementById('ui-maxhp').innerText = stats.hp;
+        document.getElementById('ui-gold').innerText = player.gold;
+        
+        let atkDisplay = stats.atk + (player.tempBuffs.atk > 0 ? ` (+${player.tempBuffs.atk})` : "");
+        let defDisplay = stats.def + (player.tempBuffs.def > 0 ? ` (+${player.tempBuffs.def})` : "");
+        document.getElementById('ui-atk').innerText = atkDisplay;
+        document.getElementById('ui-def').innerText = defDisplay;
+        document.getElementById('buff-atk').className = `buff-tag ${player.tempBuffs.atk > 0 ? 'active' : ''}`;
+        document.getElementById('buff-def').className = `buff-tag ${player.tempBuffs.def > 0 ? 'active' : ''}`;
+
+        const grid = document.getElementById('equip-display'); grid.innerHTML = ''; SLOTS.forEach(slot => { const item = player.equipment[slot]; const div = document.createElement('div'); div.className = 'equip-slot'; div.innerHTML = `<span class="label">${SLOT_NAMES[slot]}</span><span class="item-name">${item ? item.name : '---'}</span>`; if (item) { let txt = ''; for (let k in item.stats) txt += `${k.toUpperCase()}+${item.stats[k]} `; div.title = txt; } grid.appendChild(div); });
+        
+        let totalPotions = Object.values(player.inventory).reduce((a,b)=>a+b, 0);
+        if (totalPotions >= 10) checkAchievement('hoarder');
+        if (stats.def + player.tempBuffs.def >= 25) checkAchievement('iron_wall');
+        if (stats.atk + player.tempBuffs.atk >= 50) checkAchievement('glass_cannon'); 
+        if (player.gold >= 500) checkAchievement('rich'); 
+        if (SLOTS.every(s => player.equipment[s] !== null)) checkAchievement('full_gear');
+        if (player.spentGold >= 500) checkAchievement('shopaholic'); 
+        
+        updateEnemyUI();
+    }
+
+    function updateEnemyUI() {
+        const panel = document.getElementById('enemy-panel');
+        if (enemy && enemy.currentHp > 0) {
+            panel.classList.add('active');
+            document.getElementById('enemy-icon-display').innerText = enemy.icon;
+            document.getElementById('enemy-name-display').innerText = enemy.name;
+            document.getElementById('enemy-hp-current').innerText = enemy.currentHp;
+            document.getElementById('enemy-hp-max').innerText = enemy.maxHp;
+            const hpPercent = Math.max(0, Math.min(100, (enemy.currentHp / enemy.maxHp) * 100));
+            document.getElementById('enemy-hp-fill').style.width = hpPercent + '%';
+        } else {
+            panel.classList.remove('active');
+        }
+    }
+
+    /* --- 遊戲流程 --- */
+    function startGame(classKey) {
+        const cls = CLASSES[classKey];
+        player = {
+            classKey: classKey, base: { ...cls }, currentHp: cls.hp, gold: 0, equipment: {},
+            inventory: { 'heal_small': 5, 'heal_large': 0, 'buff_atk': 0, 'buff_def': 0 },
+            tempBuffs: { atk: 0, def: 0 }, spentGold: 0
+        };
+        SLOTS.forEach(slot => player.equipment[slot] = null);
+        floor = 0; enemy = null;
+        document.getElementById('screen-start').classList.remove('active'); document.getElementById('screen-over').classList.remove('active'); document.getElementById('screen-game').classList.add('active');
+        const starterWeapons = { barbarian: ITEM_DB.mainHand[1], assassin: ITEM_DB.mainHand[2], mage: ITEM_DB.mainHand[3], warlock: ITEM_DB.mainHand[6], knight: ITEM_DB.mainHand[4] };
+        equip(JSON.parse(JSON.stringify(starterWeapons[classKey])), 'mainHand', true);
+        checkAchievement('first_step'); updateUI(); log(`你選擇了 <span class="highlight">${cls.name}</span>，準備好面對試煉了嗎？`); nextFloor();
+    }
+
+    function getPlayerStats() { let stats = { hp: player.base.hp, atk: player.base.atk, def: player.base.def, crit: 0 }; for (let slot of SLOTS) { const item = player.equipment[slot]; if (item && item.stats) { if (item.stats.hp) stats.hp += item.stats.hp; if (item.stats.atk) stats.atk += item.stats.atk; if (item.stats.def) stats.def += item.stats.def; if (item.stats.crit) stats.crit += item.stats.crit; } } return stats; }
+
+    function nextFloor() {
+        floor++; enemy = null;
+        if (player.tempBuffs.atk > 0 || player.tempBuffs.def > 0) { player.tempBuffs = { atk: 0, def: 0 }; log("藥水效果消退了...", 'desc-text'); }
+        if (floor >= 10) checkAchievement('floor_10'); 
+        if (floor >= 20) checkAchievement('floor_20'); 
+        if (floor >= 30) checkAchievement('floor_30'); 
+        if (floor >= 50) checkAchievement('floor_50');
+        updateUI(); log(`<br>--- <strong>第 ${floor} 層</strong> ---`, 'highlight');
+        const rand = Math.random(); if (floor % 10 === 0) encounterMonster(true); else if (rand < 0.7) encounterMonster(false); else triggerEvent();
+    }
+
+    function encounterMonster(isBoss, customMonster = null) {
+        if (customMonster) {
+            enemy = customMonster;
+        } else {
+            const scale = 1 + (floor * 0.12);
+            let category = 'weak';
+            if (floor > 30) category = 'strong'; else if (floor > 10) category = 'medium';
+            if (isBoss) category = 'boss';
+            const monsterTemplate = MONSTER_DB[category][Math.floor(Math.random() * MONSTER_DB[category].length)];
+            
+            let hpBase = isBoss ? 130 : 35;
+            let atkBase = isBoss ? 13 : 6;
+
+            enemy = {
+                icon: monsterTemplate.icon, name: (isBoss ? "首領: " : "") + monsterTemplate.name,
+                maxHp: Math.floor(hpBase * scale), currentHp: Math.floor(hpBase * scale),
+                atk: Math.floor(atkBase * scale) + Math.floor(floor/2),
+                isBoss: isBoss 
+            };
+        }
+        updateUI(); 
+        log(`遭遇敵襲：<span class="danger">${enemy.icon} ${enemy.name}</span> 出現了！`); 
+        renderCombatControls();
+    }
+
+    function renderCombatControls() { 
+        const area = document.getElementById('action-area'); area.innerHTML = ''; 
+        const atkBtn = document.createElement('button'); atkBtn.className = 'btn-atk'; atkBtn.innerText = '⚔️ 攻擊'; atkBtn.onclick = combatRound; area.appendChild(atkBtn); 
+        const potBtn = document.createElement('button'); potBtn.className = 'btn-heal'; potBtn.innerText = `🎒 藥水`; potBtn.onclick = openPotionModal; area.appendChild(potBtn); 
+    }
+
+    function combatRound() {
+        const stats = getPlayerStats();
+        const totalAtk = stats.atk + player.tempBuffs.atk;
+        let isCrit = Math.random() * 100 < stats.crit; if (isCrit) checkAchievement('lucky');
+        let dmg = Math.floor(totalAtk * (isCrit ? 1.6 : 1) * (0.9 + Math.random()*0.2));
+        if (player.classKey === 'warlock') { let heal = Math.ceil(dmg * 0.15); player.currentHp += heal; log(`(吸血) 恢復了 ${heal} 生命`, 'success'); }
+        if (dmg >= 80) checkAchievement('high_dmg');
+        
+        enemy.currentHp -= dmg;
+        log(`你攻擊了 ${enemy.icon}，造成 ${dmg} 傷害${isCrit?' (爆擊!)':''}。`);
+
+        if (enemy.currentHp <= 0) {
+            log(`成功擊敗了 ${enemy.icon} ${enemy.name}！`, 'success');
+            player.gold += Math.floor(Math.random() * 15) + floor;
+            if (player.currentHp < 10) checkAchievement('close_call');
+            if (enemy.isBoss && floor === 10) checkAchievement('boss_killer');
+            
+            let wasBoss = enemy.isBoss;
+            enemy = null; updateUI();
+            
+            if (wasBoss) {
+                triggerBossMerchant();
+            } else {
+                winReward();
+            }
+            return;
+        }
+        monsterHit(enemy.atk);
+    }
+
+    function monsterHit(dmg) {
+        const stats = getPlayerStats();
+        const totalDef = stats.def + player.tempBuffs.def;
+        let incoming = Math.max(1, Math.floor((dmg - totalDef) * (0.9 + Math.random()*0.2)));
+        if (player.classKey === 'knight' && Math.random() < 0.25) { incoming = Math.floor(incoming * 0.3); log("🛡️ 格擋成功！", 'highlight'); }
+        else if (totalDef > dmg * 1.2 && Math.random() > 0.6) { incoming = 0; checkAchievement('untouchable'); log(`🛡️ 完美的防禦！`, 'success'); }
+        player.currentHp -= incoming;
+        log(`你受到 ${incoming} 點傷害。`, 'danger');
+        updateUI();
+        if (player.currentHp <= 0) gameOver();
+    }
+
+    function winReward() { if (Math.random() < 0.5) generateLoot(); else { log("怪物掉落了一些金幣。"); renderNextButton(); } }
+
+    /* --- 事件系統 --- */
+    function triggerEvent() { 
+        const roll = Math.random();
+        if (roll < 0.25) triggerMerchant();
+        else if (roll < 0.45) triggerShrine();
+        else if (roll < 0.65) triggerChest();
+        else if (roll < 0.85) triggerWanderer();
+        else {
+             let g = 30 + floor*2; log(`💰 撿到錢袋，獲得 ${g} 金幣。`, 'highlight'); player.gold += g; renderNextButton(); 
+        }
+        updateUI(); 
+    }
+
+    function triggerBossMerchant() {
+        log("🎉 戰勝了首領！一位旅行商人趕來慶祝！", 'highlight');
+        log("「太強了！這瓶藥水送給你當作慶祝禮物。」");
+        player.inventory['heal_small']++;
+        log("獲得了 小型藥水 x1。", 'success');
+        prepareMerchantItems();
+        setTimeout(() => openMerchantModal(), 800);
+    }
+
+    function triggerMerchant() {
+        log("🐫 遠方來了一位旅行商人...");
+        prepareMerchantItems();
+        openMerchantModal();
+    }
+
+    function prepareMerchantItems() {
+        merchantItems = [];
+        for (let i = 0; i < 3; i++) {
+            if (Math.random() < 0.6) {
+                const pKeys = Object.keys(POTIONS); const pick = pKeys[Math.floor(Math.random() * pKeys.length)];
+                merchantItems.push({ type: 'potion', key: pick, ...POTIONS[pick] });
+            } else {
+                const tempEquip = generateRandomEquip();
+                if (tempEquip) {
+                    let price = 50 + (floor * 10) + (tempEquip.stats.atk || 0)*5 + (tempEquip.stats.def || 0)*5;
+                    merchantItems.push({ type: 'equip', item: tempEquip, price: price });
+                }
+            }
+        }
+    }
+
+    function openMerchantModal() {
+        const modal = document.getElementById('modal-merchant');
+        const list = document.getElementById('shop-list');
+        document.getElementById('merchant-gold').innerText = player.gold;
+        list.innerHTML = '';
+        
+        if (merchantItems.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:#aaa;">商人的貨物賣光了...</div>';
+        }
+
+        merchantItems.forEach((obj, idx) => {
+            const row = document.createElement('div'); row.className = 'shop-row';
+            let content = '';
+            const canAfford = player.gold >= obj.price;
+            const priceClass = canAfford ? 'shop-price' : 'shop-price unaffordable';
+            const btnAttr = canAfford ? '' : 'disabled';
+            const btnText = obj.sold ? '已售出' : (canAfford ? '購買' : '缺錢');
+
+            if (obj.sold) {
+                content = `<div class="shop-info" style="color:#555; text-decoration:line-through;">${obj.name || obj.item.name}</div><div class="action-group"><button class="btn-buy" disabled>已售出</button></div>`;
+            } else if (obj.type === 'potion') {
+                content = `<div class="shop-info"><div class="potion-icon">${obj.icon}</div><div><div>${obj.name}</div><div class="potion-desc">${obj.desc}</div></div></div><div class="action-group"><span class="${priceClass}">${obj.price}G</span><button class="btn-buy" onclick="buyItem(${idx})" ${btnAttr}>${btnText}</button></div>`;
+            } else {
+                let statsStr = ''; for(let k in obj.item.stats) statsStr += `${k.toUpperCase()}+${obj.item.stats[k]} `;
+                content = `<div class="shop-info"><div class="potion-icon">🛡️</div><div><div>${obj.item.name}</div><div class="potion-desc">${statsStr}</div></div></div><div class="action-group"><span class="${priceClass}">${obj.price}G</span><button class="btn-buy" onclick="buyItem(${idx})" ${btnAttr}>${btnText}</button></div>`;
+            }
+            row.innerHTML = content; list.appendChild(row);
+        });
+        modal.style.display = 'flex';
+    }
+
+    function buyItem(idx) {
+        const obj = merchantItems[idx];
+        if (obj.sold) return;
+        if (player.gold >= obj.price) {
+            player.gold -= obj.price; 
+            player.spentGold = (player.spentGold || 0) + obj.price; 
+            obj.sold = true; 
+            document.getElementById('merchant-gold').innerText = player.gold;
+            
+            if (obj.type === 'potion') { 
+                player.inventory[obj.key]++; 
+                showToast(`購買了 ${obj.name}`);
+                openMerchantModal(); 
+            } 
+            else { 
+                tempLoot = obj.item; 
+                document.getElementById('modal-merchant').style.display = 'none';
+                showLootModal(obj.item); 
+            }
+            updateUI(); 
+        } else { showToast("金幣不足！"); }
+    }
+    
+    function leaveMerchant() { document.getElementById('modal-merchant').style.display = 'none'; log("你告別了商人，繼續前行。"); renderNextButton(); }
+
+    function triggerShrine() {
+        log("⛩️ 發現一座古老的神壇...", 'highlight');
+        const outcome = Math.random();
+        if (outcome < 0.3) {
+            log("神壇發出柔和的金光！(吉)", 'success'); const bonus = Math.random();
+            if (bonus < 0.33) { player.currentHp = getPlayerStats().hp; log("傷口完全癒合了！"); } 
+            else if (bonus < 0.66) { player.gold += 100; log("神壇上憑空出現了 100 金幣！"); } 
+            else { player.tempBuffs.atk += 10; log("充滿了力量！(本層攻擊+10)"); }
+        } else if (outcome < 0.5) {
+            log("神壇冒出不祥的黑煙...(凶)", 'danger'); const bad = Math.random();
+            if (bad < 0.5) { let dmg = Math.floor(getPlayerStats().hp * 0.3); player.currentHp -= dmg; log(`遭受天譴！扣除 ${dmg} 生命。`); } 
+            else { let loss = Math.floor(player.gold / 2); player.gold -= loss; log(`錢袋突然破了洞！遺失了 ${loss} 金幣。`); }
+        } else { log("你虔誠地祈禱，但什麼事都沒發生。(平)", 'desc-text'); }
+        updateUI(); if (player.currentHp <= 0) gameOver(); else renderNextButton();
+    }
+
+    function triggerChest() {
+        log("📦 發現一個寶箱！", 'highlight');
+        const roll = Math.random();
+        if (roll < 0.15) {
+            log('寶箱突然長出了牙齒！是 <span class="danger">寶箱怪</span>！');
+            const mimicStats = { icon: '📦', name: '寶箱怪', maxHp: 60 + floor*5, currentHp: 60 + floor*5, atk: 15 + floor };
+            encounterMonster(false, mimicStats);
+        } else if (roll < 0.30) {
+            let dmg = Math.floor(getPlayerStats().hp * 0.25) + 10; player.currentHp -= dmg;
+            log(`打開的瞬間射出了毒箭！受到 ${dmg} 傷害。`, 'danger');
+            updateUI(); if (player.currentHp <= 0) gameOver(); else renderNextButton();
+        } else {
+            if (Math.random() < 0.5) { generateLoot(); } 
+            else { 
+                const pKeys = Object.keys(POTIONS); const pick = pKeys[Math.floor(Math.random() * pKeys.length)];
+                log(`獲得了 ${POTIONS[pick].icon}${POTIONS[pick].name}！`, 'success'); player.inventory[pick]++; renderNextButton(); 
+            }
+        }
+    }
+
+    function triggerWanderer() {
+        log("👤 遇到一位衣衫襤褸的流浪者...");
+        log("「年輕人，這塔裡充滿了危險，拿著這個吧。」");
+        player.inventory['heal_small']++; log("獲得了 小型藥水。", 'success'); renderNextButton();
+    }
+
+    /* --- 輔助邏輯 --- */
+    function generateRandomEquip() {
+        const slot = SLOTS[Math.floor(Math.random() * SLOTS.length)];
+        let candidates = ITEM_DB[slot].filter(item => item.allowed === null || item.allowed.includes(player.classKey));
+        if (candidates.length === 0) candidates = ITEM_DB[slot].filter(item => item.allowed === null);
+        if (candidates.length === 0) return null;
+        const baseItem = candidates[Math.floor(Math.random() * candidates.length)];
+        let newItem = JSON.parse(JSON.stringify(baseItem)); newItem.slot = slot;
+        const multiplier = 1 + (floor * 0.15);
+        for (let key in newItem.stats) { if (newItem.stats[key] > 0) newItem.stats[key] = Math.ceil(newItem.stats[key] * multiplier * (0.8 + Math.random() * 0.4)); }
+        if (Math.random() < 0.25) { newItem.name = "精良的 " + newItem.name; newItem.stats.atk = (newItem.stats.atk || 0) + Math.ceil(floor/2); }
+        return newItem;
+    }
+
+    function generateLoot() { const item = generateRandomEquip(); if(!item) {renderNextButton(); return;} tempLoot = item; showLootModal(item); }
+    function showLootModal(newItem) { const modal = document.getElementById('modal-loot'); const currentItem = player.equipment[newItem.slot]; let curHtml = currentItem ? `<strong>${currentItem.name}</strong><br>` : "無<br>"; if (currentItem) for (let k in currentItem.stats) curHtml += `${k.toUpperCase()}: ${currentItem.stats[k]}<br>`; document.getElementById('loot-current').innerHTML = curHtml; let newHtml = `<strong>${newItem.name}</strong><br>`; for (let k in newItem.stats) { let diff = newItem.stats[k] - (currentItem && currentItem.stats[k] ? currentItem.stats[k] : 0); let colorClass = diff > 0 ? 'stat-diff-pos' : (diff < 0 ? 'stat-diff-neg' : ''); newHtml += `${k.toUpperCase()}: ${newItem.stats[k]} <span class="${colorClass}">(${diff>0?'+':''}${diff})</span><br>`; } document.getElementById('loot-new').innerHTML = newHtml; modal.style.display = 'flex'; }
+    function confirmLoot(accept) { document.getElementById('modal-loot').style.display = 'none'; if (accept && tempLoot) equip(tempLoot, tempLoot.slot); tempLoot = null; renderNextButton(); }
+    function equip(item, slot, silent=false) { 
+        player.equipment[slot] = item; 
+        if (item.name.includes("精良")) checkAchievement('lucky_looter');
+        updateUI(); 
+        if (!silent) log(`裝備了 <span class="highlight">${item.name}</span>！`, 'success'); 
+    }
+    function renderNextButton() { const area = document.getElementById('action-area'); area.innerHTML = ''; const btn = document.createElement('button'); btn.innerText = '👣 前往下一層'; btn.onclick = nextFloor; area.appendChild(btn); }
+    function gameOver() { checkAchievement('death'); document.getElementById('screen-game').classList.remove('active'); document.getElementById('screen-over').classList.add('active'); document.getElementById('final-floor').innerText = floor; }
+
+    function openPotionModal() {
+        const list = document.getElementById('potion-list'); list.innerHTML = ''; let hasPotion = false;
+        for (let key in player.inventory) {
+            if (player.inventory[key] > 0) {
+                hasPotion = true; const pData = POTIONS[key]; const row = document.createElement('div'); row.className = 'potion-row';
+                row.innerHTML = `<div class="potion-info"><div class="potion-icon">${pData.icon}</div><div><div>${pData.name}</div><div class="potion-desc">${pData.desc}</div></div></div><div class="action-group"><span class="shop-price">x${player.inventory[key]}</span><button class="btn-use" onclick="usePotion('${key}')">使用</button></div>`;
+                list.appendChild(row);
+            }
+        }
+        if (!hasPotion) list.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">背包空空如也...</div>';
+        document.getElementById('modal-potions').style.display = 'flex';
+    }
+    
+    function usePotion(key) {
+        if (player.inventory[key] > 0) {
+            player.inventory[key]--; const pData = POTIONS[key];
+            if (pData.type === 'heal') { const stats = getPlayerStats(); player.currentHp = Math.min(stats.hp, player.currentHp + pData.val); log(`喝下了 ${pData.icon}${pData.name}，恢復了 ${pData.val} 生命。`, 'success'); }
+            else if (pData.type === 'healFull') { const stats = getPlayerStats(); player.currentHp = stats.hp; log(`喝下了 ${pData.icon}${pData.name}，生命完全恢復！`, 'success'); }
+            else if (pData.type === 'buff') { player.tempBuffs[pData.stat] += pData.val; log(`喝下了 ${pData.icon}${pData.name}，能力獲得了提升！`, 'highlight'); }
+            
+            updateUI();
+            openPotionModal();
+        }
+    }
+</script>
+</body>
+</html>

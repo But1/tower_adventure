@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>無盡試煉之塔 v3.8 - 首領獎勵版</title>
+    <title>無盡試煉之塔 v3.9 - 修復版</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -98,8 +98,8 @@
         .btn-achievement { background: #b8860b; color: black; font-weight: bold; flex: 0 0 100%; margin-top: 5px;}
 
         /* Modal & Notifications */
-        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 100; }
-        .modal-content { background: #222; border: 2px solid var(--accent-color); padding: 15px; width: 95%; max-width: 500px; border-radius: 10px; max-height: 85vh; overflow-y: auto; }
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 200; }
+        .modal-content { background: #222; border: 2px solid var(--accent-color); padding: 15px; width: 95%; max-width: 500px; border-radius: 10px; max-height: 85vh; overflow-y: auto; position: relative; }
         .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
         .compare-card { background: #333; padding: 10px; border-radius: 5px; }
         .stat-diff-pos { color: var(--success-color); }
@@ -107,7 +107,7 @@
         .achieve-grid { display: grid; grid-template-columns: 1fr; gap: 8px; text-align: left; }
         .achieve-item { background: #333; padding: 8px; border-radius: 5px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; opacity: 0.5; filter: grayscale(1); }
         .achieve-item.unlocked { opacity: 1; filter: grayscale(0); border-color: var(--accent-color); background: #2a2200; }
-        #notification-area { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 300px; pointer-events: none; z-index: 200; }
+        #notification-area { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 300px; pointer-events: none; z-index: 300; }
         .toast { background: rgba(0, 0, 0, 0.95); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 10px; margin-bottom: 10px; border-radius: 5px; text-align: center; animation: slideDown 0.5s ease-out, fadeOut 0.5s ease-in 2.5s forwards; box-shadow: 0 0 10px var(--accent-color); }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
@@ -140,7 +140,7 @@
 <div class="game-container">
     <div id="notification-area"></div>
 
-    <h1>🏰 無盡試煉 v3.8</h1>
+    <h1>🏰 無盡試煉 v3.9</h1>
 
     <div id="screen-start" class="screen active">
         <h3>請選擇你的英雄</h3>
@@ -195,7 +195,18 @@
 <div id="modal-loot" class="modal-overlay"><div class="modal-content"><h3>🎁 獲得戰利品!</h3><div class="compare-grid"><div class="compare-card" style="opacity: 0.7;"><h4>目前裝備</h4><div id="loot-current">無</div></div><div class="compare-card" style="border: 1px solid var(--accent-color);"><h4 class="highlight">新裝備</h4><div id="loot-new"></div></div></div><div class="controls"><button class="btn-heal" onclick="confirmLoot(true)">裝備</button><button class="btn-atk" onclick="confirmLoot(false)">丟棄</button></div></div></div>
 <div id="modal-achievements" class="modal-overlay" onclick="if(event.target === this) this.style.display='none'"><div class="modal-content"><h3>🏆 成就紀錄</h3><p style="text-align:center; font-size:0.8rem; color:#888;">成就進度會自動儲存在此瀏覽器中</p><div id="achievement-list" class="achieve-grid"></div><div class="controls" style="margin-top:20px;"><button onclick="document.getElementById('modal-achievements').style.display='none'">關閉</button><button class="btn-atk" onclick="resetAchievements()">重置成就</button></div></div></div>
 <div id="modal-potions" class="modal-overlay" onclick="if(event.target === this) this.style.display='none'"><div class="modal-content"><h3>🎒 藥水背包</h3><div id="potion-list" class="potion-list"></div><div class="controls" style="margin-top:20px;"><button onclick="document.getElementById('modal-potions').style.display='none'">關閉</button></div></div></div>
-<div id="modal-merchant" class="modal-overlay"><div class="modal-content"><h3>🐫 旅行商人</h3><p style="text-align:center; color:#aaa;">「只要有金幣，什麼都好談...」</p><div style="text-align:center; margin-bottom:10px;" class="highlight">持有金幣: <span id="merchant-gold"></span></div><div id="shop-list" class="shop-list"></div><div class="controls" style="margin-top:20px;"><button onclick="leaveMerchant()">離開商店</button></div></div></div>
+
+<div id="modal-merchant" class="modal-overlay">
+    <div class="modal-content">
+        <h3>🐫 旅行商人</h3>
+        <p style="text-align:center; color:#aaa;">「只要有金幣，什麼都好談...」</p>
+        <div style="text-align:center; margin-bottom:10px; font-size:1.1rem; border:1px solid #444; padding:5px; border-radius:5px;" class="highlight">💰 持有: <span id="merchant-gold"></span> G</div>
+        <div id="shop-list" class="shop-list"></div>
+        <div class="controls" style="margin-top:20px;">
+            <button onclick="leaveMerchant()">離開商店</button>
+        </div>
+    </div>
+</div>
 
 <script>
     /* --- 常數與資料 --- */
@@ -294,8 +305,7 @@
         const cls = CLASSES[classKey];
         player = {
             classKey: classKey, base: { ...cls }, currentHp: cls.hp, gold: 0, equipment: {},
-            // v3.8: 初始藥水改為 5
-            inventory: { 'heal_small': 5, 'heal_large': 0, 'buff_atk': 0, 'buff_def': 0 },
+            inventory: { 'heal_small': 5, 'heal_large': 0, 'buff_atk': 0, 'buff_def': 0 }, // 初始5瓶
             tempBuffs: { atk: 0, def: 0 }, spentGold: 0
         };
         SLOTS.forEach(slot => player.equipment[slot] = null);
@@ -367,7 +377,6 @@
             if (player.currentHp < 10) checkAchievement('close_call');
             if (enemy.isBoss && floor === 10) checkAchievement('boss_killer');
             
-            // v3.8 Boss Reward Logic
             let wasBoss = enemy.isBoss;
             enemy = null; updateUI();
             
@@ -408,34 +417,23 @@
         updateUI(); 
     }
 
-    // v3.8 New Function: Boss Merchant
+    // v3.9 Fix: Boss Merchant Logic
     function triggerBossMerchant() {
         log("🎉 戰勝了首領！一位旅行商人趕來慶祝！", 'highlight');
         log("「太強了！這瓶藥水送給你當作慶祝禮物。」");
         player.inventory['heal_small']++;
         log("獲得了 小型藥水 x1。", 'success');
-        
-        // Generate items similar to triggerMerchant
-        merchantItems = [];
-        for (let i = 0; i < 3; i++) {
-            if (Math.random() < 0.6) {
-                const pKeys = Object.keys(POTIONS); const pick = pKeys[Math.floor(Math.random() * pKeys.length)];
-                merchantItems.push({ type: 'potion', key: pick, ...POTIONS[pick] });
-            } else {
-                const tempEquip = generateRandomEquip();
-                if (tempEquip) {
-                    let price = 50 + (floor * 10) + (tempEquip.stats.atk || 0)*5 + (tempEquip.stats.def || 0)*5;
-                    merchantItems.push({ type: 'equip', item: tempEquip, price: price });
-                }
-            }
-        }
-        
-        updateUI();
-        setTimeout(() => openMerchantModal(), 800);
+        prepareMerchantItems();
+        setTimeout(() => openMerchantModal(), 500);
     }
 
     function triggerMerchant() {
         log("🐫 遠方來了一位旅行商人...");
+        prepareMerchantItems();
+        openMerchantModal();
+    }
+
+    function prepareMerchantItems() {
         merchantItems = [];
         for (let i = 0; i < 3; i++) {
             if (Math.random() < 0.6) {
@@ -449,18 +447,25 @@
                 }
             }
         }
-        openMerchantModal();
     }
 
+    // v3.9 Fix: Safer open function
     function openMerchantModal() {
         const modal = document.getElementById('modal-merchant');
         const list = document.getElementById('shop-list');
         document.getElementById('merchant-gold').innerText = player.gold;
         list.innerHTML = '';
+        
+        if (merchantItems.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:#aaa;">商人的貨物賣光了...</div>';
+        }
+
         merchantItems.forEach((obj, idx) => {
             const row = document.createElement('div'); row.className = 'shop-row';
             let content = '';
-            if (obj.type === 'potion') {
+            if (obj.sold) {
+                content = `<div style="color:#555; text-decoration:line-through;">${obj.name || obj.item.name} (已售出)</div>`;
+            } else if (obj.type === 'potion') {
                 content = `<div class="potion-info"><div class="potion-icon">${obj.icon}</div><div><div>${obj.name}</div><div class="potion-desc">${obj.desc}</div></div></div><div><span class="shop-price">${obj.price}G</span><button class="btn-buy" onclick="buyItem(${idx})">購買</button></div>`;
             } else {
                 let statsStr = ''; for(let k in obj.item.stats) statsStr += `${k.toUpperCase()}+${obj.item.stats[k]} `;
@@ -473,17 +478,23 @@
 
     function buyItem(idx) {
         const obj = merchantItems[idx];
-        if (obj.sold) { showToast("這商品已經賣出了"); return; }
+        if (obj.sold) { return; }
         if (player.gold >= obj.price) {
             player.gold -= obj.price; 
             player.spentGold = (player.spentGold || 0) + obj.price; 
             obj.sold = true; 
             document.getElementById('merchant-gold').innerText = player.gold;
             
-            if (obj.type === 'potion') { player.inventory[obj.key]++; showToast(`購買了 ${obj.name}`); } 
-            else { tempLoot = obj.item; showLootModal(obj.item); document.getElementById('modal-merchant').style.display = 'none'; return; }
-            
-            openMerchantModal();
+            if (obj.type === 'potion') { 
+                player.inventory[obj.key]++; 
+                showToast(`購買了 ${obj.name}`);
+                openMerchantModal(); // Refresh shop UI
+            } 
+            else { 
+                tempLoot = obj.item; 
+                document.getElementById('modal-merchant').style.display = 'none';
+                showLootModal(obj.item); 
+            }
             updateUI(); 
         } else { showToast("金幣不足！"); }
     }
